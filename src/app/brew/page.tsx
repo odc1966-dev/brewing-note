@@ -15,6 +15,7 @@ import { BrewItem, FreshBadge, TagRow } from "@/components/Items";
 import Radar from "@/components/Radar";
 import ShareSheet from "@/components/ShareSheet";
 import { PhotoStrip } from "@/components/Photos";
+import RecipeView from "@/components/RecipeView";
 
 function View() {
   const router = useRouter();
@@ -132,6 +133,12 @@ function View() {
             <p className="mt-2 px-1 text-xs text-sub">{used.map((g) => `${gearKindLabel(g.kind)} ${g.name}`).join(" · ")}</p>
           )}
         </Section>
+
+        {brew.recipe?.length ? (
+          <Section title="브루잉 레시피">
+            <RecipeView steps={brew.recipe} actual={brew.recipeActual} />
+          </Section>
+        ) : null}
 
         <Section
           title="플레이버 프로필"

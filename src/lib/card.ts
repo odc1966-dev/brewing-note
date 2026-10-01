@@ -2,6 +2,7 @@
 import { FLAVOR_AXES, gearKindLabel, tagColor, tagLabel } from "./constants";
 import type { Bean, Brew, CafeLog, Flavor, Gear } from "./types";
 import { fmtDate, fmtTime, ratio } from "./util";
+import { recipeLine } from "./recipe";
 
 const W = 1080;
 const H = 1350;
@@ -285,6 +286,14 @@ export function drawBrewCard(canvas: HTMLCanvasElement, brew: Brew, bean: Bean |
 
   // 아래쪽 내용(장비 · 컵노트 · 메모)은 구분선(H-170) 위까지만
   let y = 1062;
+  if (brew.recipe?.length) {
+    font(ctx, 24, 600);
+    ctx.fillStyle = C.accent;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(fitText(ctx, recipeLine(brew.recipe), W - 240), W / 2, y + 8);
+    y += 34;
+  }
   const used = gear.filter((g) => brew.gearIds.includes(g.id));
   if (used.length) {
     font(ctx, 24, 500);

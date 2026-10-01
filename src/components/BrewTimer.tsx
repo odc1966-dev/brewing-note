@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Droplets, Pause, Play, Plus, RotateCcw, Settings2, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { saveSettings, useStore } from "@/lib/store";
-import type { TimerStep } from "@/lib/types";
+import type { RecipeStep, TimerStep } from "@/lib/types";
+import { cumulative } from "@/lib/recipe";
+
+interface Guide {
+  at: number;
+  label: string;
+  target: number | null; // 누적 g
+  add: number | null; // 이번 g
+  styles: string[];
+  memo: string;
+}
 import { fmtTime, mmss, parseTime } from "@/lib/util";
 
 /**
@@ -50,16 +60,37 @@ export default function BrewTimer({
   dose,
   water,
   guide,
+  recipe = [],
 }: {
   open: boolean;
   onClose: () => void;
-  onFinish: (seconds: number, pours: number[]) => void;
+  /** actual: 레시피가 있을 때 단계별 실제 시작 시각 */
+  onFinish: (seconds: number, pours: number[], actual?: (number | null)[]) => void;
   dose: number | null;
   water: number | null;
-  guide: boolean; // 처음에 단계 안내를 켤지(핸드드립이면 켬)
+  guide: boolean; // 처음에 단계 안내를 켤지(핸드드립이거나 레시피가 있으면 켬)
+  recipe?: RecipeStep[];
 }) {
   const saved = useStore((s) => s.settings.timerSteps);
-  const steps = (saved?.length ? saved : DEFAULT_STEPS).slice().sort((a, b) => a.at - b.at);
+  const useRecipe = recipe.length > 0;
+
+  // 안내 단계: 기록의 레시피가 있으면 그것, 없으면 공통 안내 단계
+  const steps: Guide[] = useMemo(() => {
+    if (useRecipe) {
+      const cum = cumulative(recipe);
+      let prevAt = 0;
+      return recipe.map((st, i) => {
+        const at = st.at ?? prevAt;
+        prevAt = at;
+        return { at, label: st.label, target: st.amount ? cum[i] : null, add: st.amount, styles: st.styles, memo: st.memo };
+      });
+    }
+    return (saved?.length ? saved : DEFAULT_STEPS)
+      .slice()
+      .sort((a, b) => a.at - b.at)
+      .map((st) => ({ at: st.at, label: st.label, target: targetOf(st, dose, water), add: null, styles: [], memo: "" }));
+  }, [useRecipe, recipe, saved, dose, water]);
+  const [actual, setActual] = useState<(number | null)[]>([]);
 
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0); // ms
@@ -84,7 +115,10 @@ export default function BrewTimer({
 
   // 단계가 바뀌는 순간 짧은 진동·소리
   const sec = elapsed / 1000;
-  const curIdx = useGuide ? steps.reduce((k, s, i) => (sec >= s.at ? i : k), -1) : -1;
+  // 지금 단계 = 계획 시각이 지난 단계와, 레시피 모드에서 실제로 시작을 기록한 단계 중 더 뒤의 것
+  const byTime = steps.reduce((k, st, i) => (sec >= st.at ? i : k), -1);
+  const byMark = useRecipe ? actual.reduce<number>((k, a, i) => (a !== null ? i : k), -1) : -1;
+  const curIdx = useGuide ? Math.max(byTime, byMark) : -1;
   useEffect(() => {
     if (!running || !useGuide) return;
     if (curIdx !== lastStep.current) {
@@ -113,7 +147,10 @@ export default function BrewTimer({
       setRunning(false);
     } else {
       startRef.current = performance.now() - elapsed;
-      if (elapsed === 0) lastStep.current = 0;
+      if (elapsed === 0) {
+        lastStep.current = 0;
+        if (useRecipe) setActual(recipe.map((_, i) => (i === 0 ? 0 : null))); // 첫 단계는 시작과 함께
+      }
       if (sound) beep(); // 사용자 동작 안에서 오디오를 깨워 둔다(iOS)
       setRunning(true);
     }
@@ -123,12 +160,13 @@ export default function BrewTimer({
     setRunning(false);
     setElapsed(0);
     setPours([]);
+    setActual([]);
     lastStep.current = -1;
   }
 
   function finish() {
     const s = Math.round((running ? performance.now() - startRef.current : elapsed) / 1000);
-    onFinish(s, pours);
+    onFinish(s, pours, useRecipe ? recipe.map((_, i) => actual[i] ?? null) : undefined);
     reset();
     onClose();
   }
@@ -142,9 +180,11 @@ export default function BrewTimer({
   if (!open) return null;
 
   const cur = curIdx >= 0 ? steps[curIdx] : null;
-  const next = useGuide ? steps.find((s) => s.at > sec) : undefined;
-  const curTarget = cur ? targetOf(cur, dose, water) : null;
-  const nextTarget = next ? targetOf(next, dose, water) : null;
+  const next = useGuide && curIdx + 1 < steps.length ? steps[curIdx + 1] : undefined;
+  const curTarget = cur?.target ?? null;
+  const nextTarget = next?.target ?? null;
+  const nextMark = useRecipe ? actual.findIndex((a, i) => i > 0 && a === null) : -1; // 다음에 시작을 기록할 단계
+  const allMarked = useRecipe && actual.length > 0 && nextMark === -1;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-espresso text-white">
@@ -157,9 +197,11 @@ export default function BrewTimer({
             <button aria-label={sound ? "소리 끄기" : "소리 켜기"} onClick={() => setSound((v) => !v)} className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
               {sound ? <Volume2 size={20} /> : <VolumeX size={20} />}
             </button>
-            <button aria-label="안내 단계 편집" onClick={() => setEditing(true)} className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
-              <Settings2 size={20} />
-            </button>
+            {!useRecipe && (
+              <button aria-label="안내 단계 편집" onClick={() => setEditing(true)} className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
+                <Settings2 size={20} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -178,7 +220,7 @@ export default function BrewTimer({
 
         <label className="mx-auto mt-4 flex items-center gap-2 text-sm text-white/80">
           <input type="checkbox" checked={useGuide} onChange={(e) => setUseGuide(e.target.checked)} className="h-5 w-5 accent-[#e0a23a]" />
-          단계 안내
+          {useRecipe ? "레시피 안내" : "단계 안내"}
         </label>
 
         {useGuide && (
@@ -186,11 +228,18 @@ export default function BrewTimer({
             <div className="rounded-2xl bg-white/10 p-4">
               <div className="text-xs text-white/60">지금</div>
               <div className="text-2xl font-bold">{cur ? cur.label : "시작을 누르세요"}</div>
-              {curTarget && <div className="mt-1 text-lg text-[#f3c77a]">누적 {curTarget}g 까지</div>}
+              {curTarget && (
+                <div className="mt-1 text-lg text-[#f3c77a]">
+                  누적 {curTarget}g 까지{cur?.add ? <span className="text-sm text-white/70"> (이번 +{cur.add}g)</span> : null}
+                </div>
+              )}
+              {cur && (cur.styles.length > 0 || cur.memo) && (
+                <div className="mt-1 text-sm text-white/75">{[cur.styles.join(" · "), cur.memo].filter(Boolean).join(" — ")}</div>
+              )}
             </div>
             {next && (
               <div className="rounded-2xl border border-white/15 px-4 py-3 text-sm text-white/80">
-                다음: <b>{next.label}</b> · {Math.max(0, Math.ceil(next.at - sec))}초 후{nextTarget ? ` · 누적 ${nextTarget}g` : ""}
+                다음: <b>{next.label}</b> · {next.at > sec ? `${Math.ceil(next.at - sec)}초 후` : "지금"}{nextTarget ? ` · 누적 ${nextTarget}g` : ""}
               </div>
             )}
           </div>
@@ -198,6 +247,11 @@ export default function BrewTimer({
 
         {pours.length > 0 && (
           <div className="mt-4 text-center text-sm text-white/70">푸어 기록: {pours.map(mmss).join(" · ")}</div>
+        )}
+        {useRecipe && actual.length > 0 && (
+          <div className="mt-4 text-center text-xs text-white/70">
+            실제 시작: {recipe.map((st, i) => `${st.label} ${actual[i] != null ? mmss(actual[i]!) : "–"}`).join(" · ")}
+          </div>
         )}
 
         <div className="mt-auto grid grid-cols-3 items-center gap-3 pb-6 pt-6">
@@ -214,16 +268,29 @@ export default function BrewTimer({
           >
             {running ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="ml-1" />}
           </button>
-          <button
-            onClick={() => setPours((p) => [...p, Math.round(sec)])}
-            disabled={!running}
-            className="flex flex-col items-center gap-1 text-sm text-white/80 disabled:opacity-40"
-          >
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-white/10">
-              <Droplets size={24} />
-            </span>
-            푸어 기록
-          </button>
+          {useRecipe ? (
+            <button
+              onClick={() => setActual((a) => a.map((v, i) => (i === nextMark ? Math.round(sec) : v)))}
+              disabled={!running || nextMark < 0}
+              className="flex flex-col items-center gap-1 text-center text-sm text-white/80 disabled:opacity-40"
+            >
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-white/10">
+                <Droplets size={24} />
+              </span>
+              {allMarked ? "모두 기록함" : nextMark > 0 ? `${recipe[nextMark].label} 시작` : "다음 단계 시작"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setPours((p) => [...p, Math.round(sec)])}
+              disabled={!running}
+              className="flex flex-col items-center gap-1 text-sm text-white/80 disabled:opacity-40"
+            >
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-white/10">
+                <Droplets size={24} />
+              </span>
+              푸어 기록
+            </button>
+          )}
         </div>
         <button
           onClick={finish}
@@ -234,7 +301,7 @@ export default function BrewTimer({
         </button>
       </div>
 
-      {editing && <StepEditor steps={steps} onClose={() => setEditing(false)} />}
+      {editing && <StepEditor steps={(saved?.length ? saved : DEFAULT_STEPS).slice().sort((a, b) => a.at - b.at)} onClose={() => setEditing(false)} />}
     </div>
   );
 }

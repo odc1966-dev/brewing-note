@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Timer } from "lucide-react";
 import { upsert, useStore } from "@/lib/store";
 import { EMPTY_FLAVOR, METHODS, tagLabel } from "@/lib/constants";
-import type { Brew } from "@/lib/types";
+import type { Brew, RecipeStep } from "@/lib/types";
 import { fmtTime, mmss, num, parseTime, ratio, today, uid } from "@/lib/util";
 import { ChipSelect, Header, Label, NumBox, PrimaryButton, Stars, TextArea, TextInput } from "@/components/ui";
 import Radar, { FlavorRows } from "@/components/Radar";
@@ -15,6 +15,8 @@ import { FreshBadge, StockBar } from "@/components/Items";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
 import BrewTimer from "@/components/BrewTimer";
 import GearPicker from "@/components/GearPicker";
+import RecipeEditor from "@/components/RecipeEditor";
+import { cloneSteps } from "@/lib/recipe";
 import { stockOf } from "@/lib/stock";
 
 function Editor() {
@@ -48,6 +50,7 @@ function Editor() {
       grind: base?.grind ?? "",
       time: base?.time ?? null,
       waterType: base?.waterType ?? last?.waterType ?? "",
+      recipe: base?.recipe,
       flavor: { ...EMPTY_FLAVOR },
       tags: [],
       rating: 0,
@@ -65,6 +68,8 @@ function Editor() {
   const [addBean, setAddBean] = useState(false);
   const [timer, setTimer] = useState(false);
   const [pours, setPours] = useState<number[]>(init.pours ?? []);
+  const [recipe, setRecipe] = useState<RecipeStep[]>(() => (init.recipe ? (editId ? init.recipe : cloneSteps(init.recipe)) : []));
+  const [actual, setActual] = useState<(number | null)[]>(editId ? init.recipeActual ?? [] : []);
   const [photos, setPhotos, commitPhotos] = useDraftPhotos(editId ? init.photos ?? [] : []);
   const [showArchived, setShowArchived] = useState(false);
 
@@ -92,7 +97,9 @@ function Editor() {
       memo: b.memo.trim(),
       gearIds: b.gearIds.filter((id) => gear.some((g) => g.id === id)), // 지운 장비는 빼고 저장
       photos,
-      pours: pours.length ? pours : undefined,
+      pours: pours.length && !recipe.length ? pours : undefined,
+      recipe: recipe.length ? recipe : undefined,
+      recipeActual: recipe.length && actual.some((a) => a !== null) ? actual : undefined,
       updatedAt: Date.now(),
     };
     await upsert("brews", out);
@@ -159,14 +166,6 @@ function Editor() {
         <Label hint="종류마다 하나씩">사용한 장비</Label>
         <GearPicker value={b.gearIds.filter((id) => gear.some((g) => g.id === id))} onChange={(gearIds) => patch({ gearIds })} />
 
-        <button
-          type="button"
-          onClick={() => setTimer(true)}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-espresso bg-card py-3.5 font-bold text-espresso active:bg-cream"
-        >
-          <Timer size={20} /> 타이머로 내리기
-        </button>
-
         <Label hint={r ? `비율 ${r}` : undefined}>추출 변수</Label>
         <div className="grid grid-cols-3 gap-2">
           <NumBox label="원두" unit="g" value={dose} onChange={setDose} placeholder="15" />
@@ -181,7 +180,7 @@ function Editor() {
             {grinder.name}: {grinder.memo}
           </p>
         )}
-        {pours.length > 0 && (
+        {pours.length > 0 && !recipe.length && (
           <p className="mt-2 px-1 text-xs text-sub">
             타이머 푸어 기록: {pours.map(mmss).join(" · ")}{" "}
             <button type="button" className="underline" onClick={() => setPours([])}>
@@ -189,6 +188,39 @@ function Editor() {
             </button>
           </p>
         )}
+
+        <Label hint="뜸 들이기 · N차 푸어">브루잉 레시피</Label>
+        <RecipeEditor
+          steps={recipe}
+          onChange={(st) => {
+            setRecipe(st);
+            setActual([]); // 레시피가 바뀌면 이전 실제 기록은 맞지 않으므로 지운다
+          }}
+          base={{ method: b.method, dose: num(dose), water: num(water), temp: num(temp), grind: b.grind.trim() }}
+          onSetWater={(g) => setWater(String(g))}
+          onLoad={(rc) => {
+            setRecipe(cloneSteps(rc.steps));
+            setActual([]);
+            patch({ method: rc.method || b.method, grind: rc.grind || b.grind });
+            if (rc.dose != null) setDose(String(rc.dose));
+            if (rc.water != null) setWater(String(rc.water));
+            if (rc.temp != null) setTemp(String(rc.temp));
+          }}
+        />
+        {actual.some((a) => a !== null) && (
+          <p className="mt-2 px-1 text-xs text-sub">
+            타이머 실제 시작: {recipe.map((st, i) => `${st.label} ${actual[i] != null ? mmss(actual[i]!) : "–"}`).join(" · ")}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setTimer(true)}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-espresso bg-card py-3.5 font-bold text-espresso active:bg-cream"
+        >
+          <Timer size={20} /> {recipe.length ? "이 레시피로 타이머 시작" : "타이머로 내리기"}
+        </button>
+
 
         <Label hint="차트를 누르거나 끌어도 돼요">플레이버 프로필</Label>
         <div className="rounded-2xl border border-line bg-card p-3">
@@ -224,10 +256,12 @@ function Editor() {
         onClose={() => setTimer(false)}
         dose={num(dose)}
         water={num(water)}
-        guide={b.method === "핸드드립"}
-        onFinish={(sec, p) => {
+        guide={b.method === "핸드드립" || recipe.length > 0}
+        recipe={recipe}
+        onFinish={(sec, p, act) => {
           setTime(fmtTime(sec).replace("초", ""));
-          setPours(p);
+          if (act) setActual(act);
+          else setPours(p);
         }}
       />
       <BeanQuickAdd open={addBean} onClose={() => setAddBean(false)} onAdded={(nb) => patch({ beanId: nb.id })} />

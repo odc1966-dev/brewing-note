@@ -47,7 +47,9 @@ export interface Brew {
   rating: number; // 0~5, 0.5 단위
   memo: string;
   photos?: string[]; // photos 저장소의 id
-  pours?: number[]; // 타이머에서 기록한 푸어 시각(초)
+  pours?: number[]; // 타이머에서 기록한 푸어 시각(초) — 레시피 없이 쓴 경우
+  recipe?: RecipeStep[]; // 브루잉 레시피(뜸·N차 푸어)
+  recipeActual?: (number | null)[]; // 타이머로 기록한 단계별 실제 시작 시각(초), recipe 와 같은 순서
   createdAt: number;
   updatedAt: number;
 }
@@ -73,6 +75,30 @@ export interface Settings {
   defaultMethod: string;
   defaultTemp: number;
   timerSteps?: TimerStep[];
+  recipes?: SavedRecipe[]; // 내 레시피
+}
+
+/** 브루잉 레시피의 한 단계. amount 는 이번에 붓는 양(회차별), 누적은 계산 */
+export interface RecipeStep {
+  id: string;
+  label: string; // 뜸 들이기 / 1차 푸어 …
+  at: number | null; // 시작 시각(초)
+  amount: number | null; // 이번 물량 g
+  styles: string[]; // 붓는 방식(센터푸어 등)
+  duration: number | null; // 붓는 시간(초) → 유속 계산
+  memo: string;
+}
+
+export interface SavedRecipe {
+  id: string;
+  name: string;
+  method: string;
+  dose: number | null;
+  water: number | null;
+  temp: number | null;
+  grind: string;
+  steps: RecipeStep[];
+  createdAt: number;
 }
 
 /** 타이머 안내 단계: at 초에 시작, 물을 누적 pct% 까지 (0 이면 물 안내 없음) */
