@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Timer } from "lucide-react";
 import { upsert, useStore } from "@/lib/store";
-import { EMPTY_FLAVOR, GEAR_KINDS, METHODS, tagLabel } from "@/lib/constants";
+import { EMPTY_FLAVOR, METHODS, tagLabel } from "@/lib/constants";
 import type { Brew } from "@/lib/types";
 import { fmtTime, mmss, num, parseTime, ratio, today, uid } from "@/lib/util";
 import { ChipSelect, Header, Label, NumBox, PrimaryButton, Stars, TextArea, TextInput } from "@/components/ui";
@@ -14,6 +14,7 @@ import BeanQuickAdd from "@/components/BeanQuickAdd";
 import { FreshBadge, StockBar } from "@/components/Items";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
 import BrewTimer from "@/components/BrewTimer";
+import GearPicker from "@/components/GearPicker";
 import { stockOf } from "@/lib/stock";
 
 function Editor() {
@@ -77,6 +78,7 @@ function Editor() {
   const stock = curBean ? stockOf(curBean, brews.filter((x) => x.id !== b.id)) : null;
   const short = stock && num(dose) ? num(dose)! > stock.remaining : false;
   const r = ratio(num(dose), num(water));
+  const grinder = gear.find((g) => g.kind === "grinder" && b.gearIds.includes(g.id));
 
   async function save() {
     const out: Brew = {
@@ -87,6 +89,7 @@ function Editor() {
       time: parseTime(time),
       grind: b.grind.trim(),
       memo: b.memo.trim(),
+      gearIds: b.gearIds.filter((id) => gear.some((g) => g.id === id)), // 지운 장비는 빼고 저장
       photos,
       pours: pours.length ? pours : undefined,
       updatedAt: Date.now(),
@@ -152,26 +155,8 @@ function Editor() {
         <Label>추출 방식</Label>
         <ChipSelect options={METHODS} value={b.method} onChange={(v) => patch({ method: v })} allowEmpty={false} />
 
-        {gear.length > 0 && (
-          <>
-            <Label hint="여러 개 선택">사용한 장비</Label>
-            <div className="flex flex-wrap gap-2">
-              {GEAR_KINDS.flatMap((k) => gear.filter((g) => g.kind === k.id)).map((g) => {
-                const on = b.gearIds.includes(g.id);
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => patch({ gearIds: on ? b.gearIds.filter((x) => x !== g.id) : [...b.gearIds, g.id] })}
-                    className={`rounded-full border px-3 py-2 text-sm ${on ? "border-espresso bg-espresso text-white" : "border-line bg-card"}`}
-                  >
-                    {g.name}
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
+        <Label hint="종류마다 하나씩">사용한 장비</Label>
+        <GearPicker value={b.gearIds.filter((id) => gear.some((g) => g.id === id))} onChange={(gearIds) => patch({ gearIds })} />
 
         <button
           type="button"
@@ -190,6 +175,11 @@ function Editor() {
           <NumBox label="시간 (분:초)" value={time} onChange={setTime} inputMode="text" placeholder="2:30" />
           <NumBox label="물 종류" value={b.waterType} onChange={(v) => patch({ waterType: v })} inputMode="text" placeholder="생수" />
         </div>
+        {grinder?.memo && (
+          <p className="mt-2 px-1 text-xs text-sub">
+            {grinder.name}: {grinder.memo}
+          </p>
+        )}
         {pours.length > 0 && (
           <p className="mt-2 px-1 text-xs text-sub">
             타이머 푸어 기록: {pours.map(mmss).join(" · ")}{" "}

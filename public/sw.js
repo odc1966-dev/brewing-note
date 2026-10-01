@@ -1,6 +1,6 @@
 // 오프라인 지원: 페이지는 네트워크 우선(실패하면 캐시), 정적 파일은 캐시 우선.
 // 배포할 때마다 VERSION 을 올리면 이전 캐시가 정리된다.
-const VERSION = "bn-v4";
+const VERSION = "bn-v5";
 const SCOPE = self.registration.scope; // 하위 주소 배포도 지원
 
 self.addEventListener("install", (e) => {
