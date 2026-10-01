@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { asset } from "@/lib/base";
-import { WHEEL } from "@/lib/flavorWheel";
+import { WHEEL, WHEEL_INDEX } from "@/lib/flavorWheel";
+
+const pickable = [...WHEEL_INDEX.values()].filter((e) => !e.defect && e.depth > 1);
+const sca = pickable.filter((e) => !e.extra).length;
+const total = pickable.length;
 import { GhostButton, Modal } from "./ui";
 
 const PMC = "https://pmc.ncbi.nlm.nih.gov/articles/PMC5215420/";
@@ -66,7 +70,7 @@ export default function FlavorWheelSheet({ open, onClose }: { open: boolean; onC
         </p>
         <p>비슷한 맛은 가까이, 다른 맛은 멀리 놓여 있어요. 예를 들어 과일 옆에 꽃·새콤·발효가 있고, 로스티 옆에 향신료·견과·코코아가 있어요.</p>
         <p className="text-sub">
-          ‘기타’의 종이·퀴퀴함·화학적 노트나 ‘탄 향’은 흔히 보관·로스팅 문제의 신호로 봐요(업계 경험칙). 기록해 두면 원인을 찾을 때 도움이 돼요.
+          ‘기타’의 종이·퀴퀴함·화학적 노트나 ‘탄 향’의 매캐함·재 같은 노트는 흔히 보관·로스팅 문제의 신호로 봐요(업계 경험칙). 그래서 앱의 컵노트 목록에서는 뺐어요.
         </p>
 
         <h3 className="pt-2 font-bold">어떻게 만들어졌나</h3>
@@ -86,6 +90,13 @@ export default function FlavorWheelSheet({ open, onClose }: { open: boolean; onC
           ))}
         </div>
         <p className="text-xs text-sub">앱의 범주 색과 한국어 이름은 앱에서 정한 것이고, 공식 휠의 색·번역과 다를 수 있어요.</p>
+
+        <h3 className="pt-2 font-bold">앱의 컵노트 목록</h3>
+        <p>
+          이 휠의 용어(결점 성격 제외 {sca}개)를 뼈대로, 로스터리 컵노트에 흔한 표현과 한국식 노트(유자·홍시·누룽지 등), 차·술, 질감·산미 성격을 더해 모두 {total}개를
+          고를 수 있어요. 고르는 화면에서 <b>실선</b>은 휠 용어, <b>점선</b>은 추가 표현이에요.
+        </p>
+        <p className="text-xs text-sub">추가 표현은 업계에서 쓰이는 말을 앱에서 모은 것으로, 휠 용어처럼 정의·기준 물질이 정해진 표준 어휘는 아니에요.</p>
       </section>
 
       <GhostButton className="mt-4 w-full" onClick={onClose}>
