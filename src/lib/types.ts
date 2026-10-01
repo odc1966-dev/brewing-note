@@ -13,7 +13,8 @@ export interface Bean {
   roastDate: string; // YYYY-MM-DD, 비어 있을 수 있음
   cupNotes?: string[]; // 로스터리가 적은 컵노트(플레이버 휠 용어)
   notes: string; // 자유 메모
-  archived: boolean; // 다 마신 원두
+  archived: boolean; // 다 마신 원두(보관함)
+  archivedAt?: number; // 보관함으로 옮긴 시각
   weight?: number | null; // 구입 용량 g (재고 계산용)
   stockAdjust?: number; // 남은 양을 직접 맞춘 보정값 g (+면 더 있음)
   createdAt: number;

@@ -5,7 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { remove, upsert, useStore } from "@/lib/store";
 import { PROCESSES, ROASTS } from "@/lib/constants";
 import type { Bean } from "@/lib/types";
-import { ChipSelect, ConfirmDelete, Header, Label, NumBox, PrimaryButton, Section, TextArea, TextInput } from "@/components/ui";
+import { ChipSelect, ConfirmDelete, GhostButton, Header, Label, NumBox, PrimaryButton, Section, TextArea, TextInput } from "@/components/ui";
+import { RestoreSheet } from "@/components/ArchiveUI";
+import { archiveBean, restoreBean } from "@/lib/archive";
+import { Archive } from "lucide-react";
 import { BrewItem, FreshBadge, StockBar } from "@/components/Items";
 import { adjustFor, stockOf } from "@/lib/stock";
 import { num } from "@/lib/util";
@@ -31,26 +34,48 @@ function Editor() {
   );
   const best = history.reduce<(typeof history)[number] | undefined>((m, x) => (x.rating > (m?.rating ?? 0) ? x : m), undefined);
 
-  async function save() {
+  const [restoring, setRestoring] = useState(false);
+
+  /** 지금 화면에 적힌 내용(아직 저장 안 한 것 포함)으로 만든 원두 */
+  function cleaned(): Bean {
     const w = num(weight);
     const f = num(fix);
     const stockAdjust = w && f !== null ? adjustFor({ ...b, weight: w }, brews, f) : w ? (b.stockAdjust ?? 0) : 0;
-    await upsert("beans", {
-      ...b,
-      name: b.name.trim(),
-      roaster: b.roaster.trim(),
-      origin: b.origin.trim(),
-      notes: b.notes.trim(),
-      weight: w,
-      stockAdjust,
-    });
+    return { ...b, name: b.name.trim(), roaster: b.roaster.trim(), origin: b.origin.trim(), notes: b.notes.trim(), weight: w, stockAdjust };
+  }
+
+  async function save() {
+    await upsert("beans", cleaned());
     router.back();
+  }
+
+  async function toArchive() {
+    await archiveBean(cleaned());
+    router.replace("/beans/?tab=archive");
+  }
+
+  async function restore(refill: boolean) {
+    await restoreBean(cleaned(), brews, refill);
+    setRestoring(false);
+    router.replace("/beans/");
   }
 
   return (
     <div>
       <Header title={existing ? "원두 정보" : "원두 등록"} back />
       <div className="px-4">
+        {existing?.archived && (
+          <div className="mb-2 flex items-center gap-3 rounded-2xl bg-stone-200/70 px-4 py-3">
+            <Archive size={20} className="shrink-0 text-stone-600" />
+            <div className="min-w-0 flex-1 text-sm">
+              <b>보관함에 있는 원두예요</b>
+              <span className="block text-xs text-stone-600">기록할 때 원두 목록에 나오지 않아요.</span>
+            </div>
+            <button type="button" onClick={() => setRestoring(true)} className="shrink-0 rounded-xl bg-espresso px-3 py-2 text-sm font-semibold text-white">
+              다시 꺼내기
+            </button>
+          </div>
+        )}
         <Label>원두 이름</Label>
         <TextInput value={b.name} onChange={(e) => patch({ name: e.target.value })} placeholder="예: Ethiopia Yirgacheffe G1" />
         <div className="grid grid-cols-2 gap-2">
@@ -97,9 +122,9 @@ function Editor() {
               </p>
             </div>
           )}
-          {stock?.empty && !b.archived && (
-            <button type="button" onClick={() => patch({ archived: true })} className="mt-2 w-full rounded-xl bg-cream py-2.5 text-sm font-semibold">
-              다 마신 원두로 표시하기
+          {stock?.empty && existing && !existing.archived && (
+            <button type="button" onClick={toArchive} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-cream py-2.5 text-sm font-semibold">
+              <Archive size={16} /> 다 썼어요 · 보관함으로 옮기기
             </button>
           )}
         </div>
@@ -110,17 +135,14 @@ function Editor() {
         <Label hint="선택">메모</Label>
         <TextArea value={b.notes} onChange={(e) => patch({ notes: e.target.value })} placeholder="구입처, 가격, 로스터리 설명 등" rows={2} />
 
-        <label className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-card px-4 py-3.5">
-          <input type="checkbox" checked={b.archived} onChange={(e) => patch({ archived: e.target.checked })} className="h-5 w-5 accent-[#3a2a20]" />
-          <span>
-            <span className="font-semibold">다 마신 원두</span>
-            <span className="block text-xs text-sub">기록할 때 원두 목록에서 숨겨져요(기록은 그대로).</span>
-          </span>
-        </label>
-
         <PrimaryButton className="mt-6" onClick={save} disabled={!b.name.trim()}>
           저장
         </PrimaryButton>
+        {existing && !existing.archived && (
+          <GhostButton className="mt-2 w-full" onClick={toArchive} disabled={!b.name.trim()}>
+            <Archive size={18} /> 다 마셨어요 · 보관함으로 옮기기
+          </GhostButton>
+        )}
 
         {history.length > 0 && (
           <Section title={`이 원두로 내린 기록 ${history.length}`}>
@@ -150,6 +172,7 @@ function Editor() {
           </div>
         )}
       </div>
+      {existing && <RestoreSheet bean={cleaned()} open={restoring} onClose={() => setRestoring(false)} onRestore={restore} />}
     </div>
   );
 }

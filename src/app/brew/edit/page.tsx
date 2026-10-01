@@ -38,7 +38,8 @@ function Editor() {
     return {
       id: uid(),
       date: today(),
-      beanId: base?.beanId ?? last?.beanId ?? "",
+      // 직전 원두가 보관함에 들어갔으면 미리 고르지 않는다
+      beanId: base?.beanId ?? (last && !beans.find((x) => x.id === last.beanId)?.archived ? last.beanId : ""),
       method: base?.method ?? last?.method ?? settings.defaultMethod,
       gearIds: base?.gearIds ?? last?.gearIds ?? [],
       dose: base?.dose ?? null,
@@ -136,7 +137,7 @@ function Editor() {
         </div>
         {beans.some((x) => x.archived) && (
           <button type="button" onClick={() => setShowArchived((v) => !v)} className="mt-2 px-1 text-xs text-sub underline">
-            {showArchived ? "다 마신 원두 숨기기" : "다 마신 원두도 보기"}
+            {showArchived ? "보관함 원두 숨기기" : "보관함 원두도 보기"}
           </button>
         )}
         {curBean && (

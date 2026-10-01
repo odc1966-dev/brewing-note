@@ -3,7 +3,9 @@
 import { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, Pencil, Share2 } from "lucide-react";
+import { Archive, Copy, PackageOpen, Pencil, Share2 } from "lucide-react";
+import { stockOf } from "@/lib/stock";
+import { archiveBean } from "@/lib/archive";
 import { remove, useStore } from "@/lib/store";
 import { gearKindLabel } from "@/lib/constants";
 import { drawBrewCard } from "@/lib/card";
@@ -26,6 +28,7 @@ function View() {
 
   const brew = brews.find((x) => x.id === id);
   const bean = beans.find((x) => x.id === brew?.beanId);
+  const beanStock = bean ? stockOf(bean, brews) : null;
 
   const sameBean = useMemo(
     () =>
@@ -93,6 +96,20 @@ function View() {
           )}
         </Card>
 
+        {bean && !bean.archived && beanStock?.empty && (
+          <div className="mt-3 flex items-center gap-3 rounded-2xl bg-orange-50 px-4 py-3 text-orange-900">
+            <PackageOpen size={20} className="shrink-0" />
+            <span className="min-w-0 flex-1 text-sm">
+              <b>{bean.name}</b> 원두를 다 썼어요.
+            </span>
+            <button
+              onClick={() => archiveBean(bean)}
+              className="flex shrink-0 items-center gap-1 rounded-xl bg-espresso px-3 py-2 text-sm font-semibold text-white"
+            >
+              <Archive size={15} /> 보관함으로
+            </button>
+          </div>
+        )}
         {brew.photos?.length ? (
           <div className="mt-4">
             <PhotoStrip ids={brew.photos} />
