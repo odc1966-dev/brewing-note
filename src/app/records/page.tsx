@@ -7,9 +7,10 @@ import { Plus, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { tagLabel } from "@/lib/constants";
 import { BrewItem, CafeItem } from "@/components/Items";
+import BeanLogList, { buildBeanLog } from "@/components/BeanLog";
 import { Empty, Header, Segment } from "@/components/ui";
 
-type Tab = "brew" | "cafe";
+type Tab = "brew" | "cafe" | "beans";
 
 /** YYYY-MM → "2026년 10월" */
 const monthLabel = (d: string) => `${d.slice(0, 4)}년 ${Number(d.slice(5, 7))}월`;
@@ -27,7 +28,8 @@ function groupByMonth<T extends { date: string }>(list: T[]) {
 
 function Records() {
   const router = useRouter();
-  const tab: Tab = useSearchParams().get("tab") === "cafe" ? "cafe" : "brew";
+  const tp = useSearchParams().get("tab");
+  const tab: Tab = tp === "cafe" ? "cafe" : tp === "beans" ? "beans" : "brew";
   const brews = useStore((s) => s.brews);
   const cafes = useStore((s) => s.cafes);
   const beans = useStore((s) => s.beans);
@@ -53,6 +55,7 @@ function Records() {
   }, [cafes, query]);
 
   const groups = tab === "brew" ? groupByMonth(brewList) : groupByMonth(cafeList);
+  const beanLog = useMemo(() => buildBeanLog(beans, brews, cafes), [beans, brews, cafes]);
 
   return (
     <div>
@@ -60,7 +63,7 @@ function Records() {
         title="기록"
         right={
           <Link
-            href={tab === "brew" ? "/brew/edit/" : "/cafe/edit/"}
+            href={tab === "cafe" ? "/cafe/edit/" : tab === "beans" ? "/beans/edit/" : "/brew/edit/"}
             aria-label="새 기록"
             className="grid h-11 w-11 place-items-center rounded-full bg-espresso text-white"
           >
@@ -73,22 +76,25 @@ function Records() {
           options={[
             { id: "brew", label: `추출 ${brews.length}` },
             { id: "cafe", label: `카페 ${cafes.length}` },
+            { id: "beans", label: `원두 ${beanLog.length}` },
           ]}
           value={tab}
-          onChange={(t) => router.replace(t === "cafe" ? "/records/?tab=cafe" : "/records/")}
+          onChange={(t) => router.replace(t === "brew" ? "/records/" : `/records/?tab=${t}`)}
         />
         <label className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-card px-3">
           <Search size={18} className="text-sub" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={tab === "brew" ? "원두, 로스터리, 추출 방식, 메모" : "카페, 메뉴, 메모"}
+            placeholder={tab === "brew" ? "원두, 로스터리, 추출 방식, 메모" : tab === "cafe" ? "카페, 메뉴, 메모" : "원두, 로스터리, 카페"}
             className="w-full bg-transparent py-3 outline-none"
           />
         </label>
 
         <div className="mt-4">
-          {groups.length === 0 ? (
+          {tab === "beans" ? (
+            <BeanLogList entries={beanLog} query={q} />
+          ) : groups.length === 0 ? (
             <Empty
               title={query ? "찾는 기록이 없어요" : tab === "brew" ? "추출 기록이 없어요" : "카페 기록이 없어요"}
               action={

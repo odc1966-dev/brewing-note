@@ -11,11 +11,13 @@ import Radar, { FlavorRows } from "@/components/Radar";
 import CupNotePicker from "@/components/CupNotePicker";
 import { EvalSection } from "@/components/Scores";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
+import BeanLinkInput, { resolveCafeBean } from "@/components/BeanLinkInput";
 
 function Editor() {
   const router = useRouter();
   const editId = useSearchParams().get("id");
   const cafes = useStore((s) => s.cafes);
+  const beans = useStore((s) => s.beans);
 
   const [init] = useState<CafeLog>(() => {
     const src = cafes.find((c) => c.id === editId);
@@ -45,8 +47,10 @@ function Editor() {
   const knownCafes = useMemo(() => [...new Set(cafes.map((x) => x.cafe).filter(Boolean))].slice(0, 30), [cafes]);
 
   async function save() {
+    const beanId = await resolveCafeBean(c, beans);
     const out: CafeLog = {
       ...c,
+      beanId,
       cafe: c.cafe.trim(),
       menu: c.menu.trim(),
       beanInfo: c.beanInfo.trim(),
@@ -75,16 +79,11 @@ function Editor() {
         <Label>메뉴</Label>
         <TextInput value={c.menu} onChange={(e) => patch({ menu: e.target.value })} placeholder="예: 필터 커피, 플랫화이트" />
 
-        <div className="grid grid-cols-[2fr_1fr] gap-2">
-          <div>
-            <Label hint="선택">원두 정보</Label>
-            <TextInput value={c.beanInfo} onChange={(e) => patch({ beanInfo: e.target.value })} placeholder="예: 케냐 AA" />
-          </div>
-          <div>
-            <Label hint="원">가격</Label>
-            <TextInput inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="6000" />
-          </div>
-        </div>
+        <Label hint="선택">원두</Label>
+        <BeanLinkInput text={c.beanInfo} beanId={c.beanId} onChange={(beanInfo, beanId) => patch({ beanInfo, beanId })} />
+
+        <Label hint="원 · 선택">가격</Label>
+        <TextInput inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="6000" className="max-w-[50%]" />
 
         <Label hint="차트를 누르거나 끌어도 돼요">플레이버 프로필</Label>
         <div className="rounded-2xl border border-line bg-card p-3">

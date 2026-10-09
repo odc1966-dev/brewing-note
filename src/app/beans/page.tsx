@@ -18,7 +18,9 @@ function Beans() {
   const router = useRouter();
   const t = useSearchParams().get("tab");
   const tab: Tab = t === "gear" ? "gear" : t === "archive" ? "archive" : "beans";
-  const beans = useStore((s) => s.beans);
+  const allBeans = useStore((s) => s.beans);
+  // 카페에서만 마신 원두는 기록 탭의 원두 칸에서만 보여 준다
+  const beans = useMemo(() => allBeans.filter((b) => !b.cafeOnly), [allBeans]);
   const gear = useStore((s) => s.gear);
   const brews = useStore((s) => s.brews);
   const [q, setQ] = useState("");

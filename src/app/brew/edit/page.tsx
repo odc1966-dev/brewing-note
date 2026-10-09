@@ -77,7 +77,7 @@ function Editor() {
   const patch = (p: Partial<Brew>) => setB((x) => ({ ...x, ...p }));
 
   const beanList = useMemo(
-    () => beans.filter((x) => !x.archived || showArchived || x.id === b.beanId).sort((a, z) => z.createdAt - a.createdAt),
+    () => beans.filter((x) => (!x.cafeOnly && (!x.archived || showArchived)) || x.id === b.beanId).sort((a, z) => z.createdAt - a.createdAt),
     [beans, showArchived, b.beanId],
   );
   const curBean = beans.find((x) => x.id === b.beanId);
@@ -143,7 +143,7 @@ function Editor() {
             <Plus size={16} /> 새 원두
           </button>
         </div>
-        {beans.some((x) => x.archived) && (
+        {beans.some((x) => x.archived && !x.cafeOnly) && (
           <button type="button" onClick={() => setShowArchived((v) => !v)} className="mt-2 px-1 text-xs text-sub underline">
             {showArchived ? "보관함 원두 숨기기" : "보관함 원두도 보기"}
           </button>

@@ -15,6 +15,8 @@ export interface Bean {
   notes: string; // 자유 메모
   archived: boolean; // 다 마신 원두(보관함)
   archivedAt?: number; // 보관함으로 옮긴 시각
+  photos?: string[]; // 원두 카드·봉투 사진
+  cafeOnly?: boolean; // 카페에서만 마신 원두(원두·장비 탭·재고에 안 나옴)
   weight?: number | null; // 구입 용량 g (재고 계산용)
   stockAdjust?: number; // 남은 양을 직접 맞춘 보정값 g (+면 더 있음)
   createdAt: number;
@@ -61,7 +63,8 @@ export interface CafeLog {
   date: string;
   cafe: string;
   menu: string;
-  beanInfo: string; // 원두 정보(선택)
+  beanInfo: string; // 원두 정보(선택) — beanId 가 있으면 그 원두 이름
+  beanId?: string; // 연결된 원두
   price: number | null;
   flavor: Flavor;
   tags: string[];

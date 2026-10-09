@@ -59,7 +59,7 @@ const reqP = <T>(r: IDBRequest<T>) =>
 
 async function sweepOrphanPhotos(db: IDBDatabase) {
   const keys = (await reqP(db.transaction("photos").objectStore("photos").getAllKeys())) as string[];
-  const used = new Set([...state.brews, ...state.cafes].flatMap((x) => x.photos ?? []));
+  const used = new Set([...state.brews, ...state.cafes, ...state.beans].flatMap((x) => x.photos ?? []));
   const orphans = keys.filter((k) => !used.has(k));
   if (!orphans.length) return;
   const tx = db.transaction("photos", "readwrite");
@@ -157,7 +157,7 @@ export async function getPhotoBlob(id: string) {
 
 /** 어떤 기록에서도 쓰지 않는 사진만 지운다 */
 export async function deletePhotos(ids: string[]) {
-  const used = new Set([...state.brews, ...state.cafes].flatMap((x) => x.photos ?? []));
+  const used = new Set([...state.brews, ...state.cafes, ...state.beans].flatMap((x) => x.photos ?? []));
   const gone = ids.filter((id) => !used.has(id));
   if (!gone.length) return;
   const db = await openDB();
@@ -195,7 +195,7 @@ export async function exportData(withPhotos = true) {
   const { beans, gear, brews, cafes, settings } = state;
   const photos: Record<string, string> = {};
   if (withPhotos) {
-    for (const id of new Set([...brews, ...cafes].flatMap((x) => x.photos ?? []))) {
+    for (const id of new Set([...brews, ...cafes, ...beans].flatMap((x) => x.photos ?? []))) {
       const b = await getPhotoBlob(id);
       if (b) photos[id] = await blobToDataURL(b);
     }

@@ -45,7 +45,7 @@ export default function Home() {
     return { week, total: brews.length + cafes.length, avg };
   }, [brews, cafes]);
 
-  const activeBeans = beans.filter((b) => !b.archived).sort((a, b) => (b.roastDate || "").localeCompare(a.roastDate || "") || b.createdAt - a.createdAt);
+  const activeBeans = beans.filter((b) => !b.archived && !b.cafeOnly).sort((a, b) => (b.roastDate || "").localeCompare(a.roastDate || "") || b.createdAt - a.createdAt);
 
   const lowBeans = activeBeans
     .map((b) => ({ b, st: stockOf(b, brews) }))

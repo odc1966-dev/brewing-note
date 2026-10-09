@@ -18,10 +18,12 @@ function View() {
   const router = useRouter();
   const id = useSearchParams().get("id");
   const cafes = useStore((s) => s.cafes);
+  const beans = useStore((s) => s.beans);
   const nickname = useStore((s) => s.settings.nickname);
   const [share, setShare] = useState(false);
 
   const log = cafes.find((c) => c.id === id);
+  const linkedBean = beans.find((b) => b.id === log?.beanId);
   const sameCafe = useMemo(
     () => (log?.cafe ? cafes.filter((c) => c.cafe === log.cafe && c.id !== log.id).sort((a, b) => b.date.localeCompare(a.date)) : []),
     [cafes, log],
@@ -65,6 +67,11 @@ function View() {
             </div>
           )}
           <ScoreChips value={log} />
+          {linkedBean && (
+            <Link href={`/beans/edit/?id=${linkedBean.id}`} className="mt-3 inline-flex items-center gap-1 rounded-full bg-cream px-3 py-1.5 text-xs font-semibold">
+              원두 {linkedBean.name} 보기 ›
+            </Link>
+          )}
         </Card>
 
         {log.photos?.length ? (

@@ -8,8 +8,9 @@ import type { Bean } from "@/lib/types";
 import { ChipSelect, ConfirmDelete, GhostButton, Header, Label, NumBox, PrimaryButton, Section, TextArea, TextInput } from "@/components/ui";
 import { RestoreSheet } from "@/components/ArchiveUI";
 import { archiveBean, restoreBean } from "@/lib/archive";
-import { Archive } from "lucide-react";
-import { BrewItem, FreshBadge, StockBar } from "@/components/Items";
+import { Archive, Store } from "lucide-react";
+import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
+import { BrewItem, CafeItem, FreshBadge, StockBar } from "@/components/Items";
 import { adjustFor, stockOf } from "@/lib/stock";
 import { num } from "@/lib/util";
 import { newBean } from "@/components/BeanQuickAdd";
@@ -20,6 +21,7 @@ function Editor() {
   const id = useSearchParams().get("id");
   const beans = useStore((s) => s.beans);
   const brews = useStore((s) => s.brews);
+  const cafes = useStore((s) => s.cafes);
   const existing = beans.find((b) => b.id === id);
   const [b, setB] = useState<Bean>(() => (existing ? { ...existing } : newBean()));
   const patch = (p: Partial<Bean>) => setB((x) => ({ ...x, ...p }));
@@ -36,27 +38,41 @@ function Editor() {
 
   const [restoring, setRestoring] = useState(false);
 
+  const [photos, setPhotos, commitPhotos] = useDraftPhotos(existing?.photos ?? []);
+  const cafeHistory = useMemo(() => cafes.filter((c) => c.beanId === b.id).sort((a, z) => z.date.localeCompare(a.date)), [cafes, b.id]);
+  const cafeOnly = !!existing?.cafeOnly;
+
   /** 지금 화면에 적힌 내용(아직 저장 안 한 것 포함)으로 만든 원두 */
   function cleaned(): Bean {
     const w = num(weight);
     const f = num(fix);
     const stockAdjust = w && f !== null ? adjustFor({ ...b, weight: w }, brews, f) : w ? (b.stockAdjust ?? 0) : 0;
-    return { ...b, name: b.name.trim(), roaster: b.roaster.trim(), origin: b.origin.trim(), notes: b.notes.trim(), weight: w, stockAdjust };
+    return { ...b, name: b.name.trim(), roaster: b.roaster.trim(), origin: b.origin.trim(), notes: b.notes.trim(), weight: w, stockAdjust, photos };
   }
 
   async function save() {
     await upsert("beans", cleaned());
+    commitPhotos();
     router.back();
   }
 
   async function toArchive() {
     await archiveBean(cleaned());
+    commitPhotos();
     router.replace("/beans/?tab=archive");
   }
 
   async function restore(refill: boolean) {
     await restoreBean(cleaned(), brews, refill);
+    commitPhotos();
     setRestoring(false);
+    router.replace("/beans/");
+  }
+
+  /** 카페 원두 → 집에서 내리는 원두(원두·장비 탭·재고·기록 선택에 나옴) */
+  async function toHome() {
+    await upsert("beans", { ...cleaned(), cafeOnly: false });
+    commitPhotos();
     router.replace("/beans/");
   }
 
@@ -76,6 +92,22 @@ function Editor() {
             </button>
           </div>
         )}
+        {cafeOnly && (
+          <div className="mb-2 flex items-center gap-3 rounded-2xl bg-cream px-4 py-3">
+            <Store size={20} className="shrink-0 text-espresso" />
+            <div className="min-w-0 flex-1 text-sm">
+              <b>카페에서 마신 원두예요</b>
+              <span className="block text-xs text-sub">기록 탭의 ‘원두’ 칸에만 보여요. 같은 원두를 사서 집에서 내린다면 옮겨 주세요.</span>
+            </div>
+            <button type="button" onClick={toHome} className="shrink-0 rounded-xl bg-espresso px-3 py-2 text-sm font-semibold text-white">
+              집 원두로
+            </button>
+          </div>
+        )}
+
+        <Label hint="원두 카드 · 봉투 사진, 최대 3장">사진</Label>
+        <PhotoPicker value={photos} onChange={setPhotos} />
+
         <Label>원두 이름</Label>
         <TextInput value={b.name} onChange={(e) => patch({ name: e.target.value })} placeholder="예: Ethiopia Yirgacheffe G1" />
         <div className="grid grid-cols-2 gap-2">
@@ -100,6 +132,8 @@ function Editor() {
         <Label>로스팅 단계</Label>
         <ChipSelect options={ROASTS} value={b.roast} onChange={(v) => patch({ roast: v })} />
 
+        {!cafeOnly && (
+        <>
         <Label hint="넣으면 내릴 때마다 자동으로 빠져요">구입 용량 · 재고</Label>
         <div className="rounded-2xl border border-line bg-card p-3">
           <div className="grid grid-cols-2 gap-2">
@@ -128,6 +162,8 @@ function Editor() {
             </button>
           )}
         </div>
+        </>
+        )}
 
         <Label hint="봉투에 적힌 노트">컵노트</Label>
         <CupNotePicker value={b.cupNotes ?? []} onChange={(cupNotes) => patch({ cupNotes })} />
@@ -138,7 +174,7 @@ function Editor() {
         <PrimaryButton className="mt-6" onClick={save} disabled={!b.name.trim()}>
           저장
         </PrimaryButton>
-        {existing && !existing.archived && (
+        {existing && !existing.archived && !cafeOnly && (
           <GhostButton className="mt-2 w-full" onClick={toArchive} disabled={!b.name.trim()}>
             <Archive size={18} /> 다 마셨어요 · 보관함으로 옮기기
           </GhostButton>
@@ -160,13 +196,23 @@ function Editor() {
           </Section>
         )}
 
+        {cafeHistory.length > 0 && (
+          <Section title={`카페에서 마신 기록 ${cafeHistory.length}`}>
+            <div className="space-y-2">
+              {cafeHistory.map((c) => (
+                <CafeItem key={c.id} log={c} />
+              ))}
+            </div>
+          </Section>
+        )}
+
         {existing && (
           <div className="mt-8">
             <ConfirmDelete
-              label={history.length ? `원두 삭제 (기록 ${history.length}개는 '원두 미지정'으로 남음)` : "원두 삭제"}
+              label={history.length + cafeHistory.length ? `원두 삭제 (기록 ${history.length + cafeHistory.length}개는 그대로 남음)` : "원두 삭제"}
               onConfirm={async () => {
                 await remove("beans", existing.id);
-                router.replace("/beans/");
+                router.replace(cafeOnly ? "/records/?tab=beans" : "/beans/");
               }}
             />
           </div>
