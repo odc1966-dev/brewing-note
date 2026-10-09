@@ -4,7 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import { Stars } from "./ui";
 
 /**
- * 평가 항목: 별점(종합) · 클린컵 · 밸런스. 모두 0~5점, 0.5점 단위.
+ * 점수 입력 부품. 모든 점수는 0~5점, 0.5점 단위.
  * 클린컵·밸런스는 SCA(SCAA) 커핑 양식의 항목 이름을 빌렸지만, 척도는 홈 기록용으로 별점과 같게 단순화했다
  * (커핑 양식: 클린컵 = 5컵 각 2점 최대 10점, 밸런스 = 6~10점).
  */
@@ -15,38 +15,28 @@ export const SCORE_ITEMS = [
 
 export type ScoreKey = (typeof SCORE_ITEMS)[number]["key"];
 
-const clamp = (v: number) => Math.max(0, Math.min(5, Math.round(v * 2) / 2));
+export const clampHalf = (v: number) => Math.max(0, Math.min(5, Math.round(v * 2) / 2));
 
-function Stepper({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+/** −  4.5  + */
+export function Stepper({ value, onChange, label, small = false }: { value: number; onChange: (v: number) => void; label: string; small?: boolean }) {
+  const btn = `grid place-items-center rounded-full border border-line bg-card disabled:opacity-30 ${small ? "h-9 w-9" : "h-10 w-10"}`;
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <button
-        type="button"
-        aria-label={`${label} 0.5점 내리기`}
-        disabled={value <= 0}
-        onClick={() => onChange(clamp(value - 0.5))}
-        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card disabled:opacity-30"
-      >
-        <Minus size={18} />
+      <button type="button" aria-label={`${label} 0.5점 내리기`} disabled={value <= 0} onClick={() => onChange(clampHalf(value - 0.5))} className={btn}>
+        <Minus size={small ? 16 : 18} />
       </button>
-      <span className="w-10 text-center text-lg font-extrabold tabular-nums" aria-live="polite">
+      <span className={`text-center font-extrabold tabular-nums ${small ? "w-8 text-base" : "w-10 text-lg"}`} aria-live="polite">
         {value ? value.toFixed(1) : "–"}
       </span>
-      <button
-        type="button"
-        aria-label={`${label} 0.5점 올리기`}
-        disabled={value >= 5}
-        onClick={() => onChange(clamp(value + 0.5))}
-        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card disabled:opacity-30"
-      >
-        <Plus size={18} />
+      <button type="button" aria-label={`${label} 0.5점 올리기`} disabled={value >= 5} onClick={() => onChange(clampHalf(value + 0.5))} className={btn}>
+        <Plus size={small ? 16 : 18} />
       </button>
     </div>
   );
 }
 
-/** 동그라미 5개(반쪽 채움) — 누른 동그라미의 왼쪽 절반 = .5점 */
-function Dots({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+/** 동그라미 5개(반쪽 채움) — 누른 동그라미의 왼쪽 절반 = .5점, 같은 점수를 다시 누르면 0 */
+export function Dots({ value, onChange, label, small = false }: { value: number; onChange: (v: number) => void; label: string; small?: boolean }) {
   return (
     <div className="flex items-center" role="slider" aria-label={`${label} ${value}점`} aria-valuenow={value} aria-valuemin={0} aria-valuemax={5}>
       {[1, 2, 3, 4, 5].map((i) => {
@@ -56,19 +46,32 @@ function Dots({ value, onChange, label }: { value: number; onChange: (v: number)
             key={i}
             type="button"
             aria-label={`${label} ${i}점`}
-            className="p-1"
+            className={small ? "p-[3px]" : "p-1"}
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
               const v = e.clientX - r.left < r.width / 2 ? i - 0.5 : i;
               onChange(v === value ? 0 : v);
             }}
           >
-            <span className="relative block h-6 w-6 overflow-hidden rounded-full border-2 border-accent/60 bg-card">
+            <span className={`relative block overflow-hidden rounded-full border-2 border-accent/60 bg-card ${small ? "h-[22px] w-[22px]" : "h-6 w-6"}`}>
               <span className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${fill * 100}%` }} />
             </span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** 한 줄 점수: 이름 · 동그라미 · −/+ */
+export function ScoreRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="w-11 shrink-0 text-sm font-semibold">{label}</span>
+      <div className="flex flex-1 justify-center">
+        <Dots value={value} onChange={onChange} label={label} small />
+      </div>
+      <Stepper value={value} onChange={onChange} label={label} small />
     </div>
   );
 }
@@ -79,35 +82,28 @@ export interface EvalValue {
   balance?: number;
 }
 
-/** 기록 화면의 평가 칸 */
-export function EvalSection({ value, onChange }: { value: EvalValue; onChange: (p: Partial<EvalValue>) => void }) {
+/** 기록 화면의 별점 칸 */
+export function RatingSection({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="space-y-3 rounded-2xl border border-line bg-card p-3">
-      <div>
-        <div className="mb-1 flex items-baseline gap-2 px-1">
-          <span className="font-bold">별점</span>
-          <span className="text-xs text-sub">종합 · 별 왼쪽 절반을 누르거나 −/+ 로 0.5점씩</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <Stars value={value.rating} onChange={(rating) => onChange({ rating })} size={30} />
-          <Stepper value={value.rating} onChange={(rating) => onChange({ rating })} label="별점" />
-        </div>
+    <div className="rounded-2xl border border-line bg-card p-3">
+      <div className="flex items-center justify-between gap-2">
+        <Stars value={value} onChange={onChange} size={30} />
+        <Stepper value={value} onChange={onChange} label="별점" />
       </div>
-      {SCORE_ITEMS.map((it) => {
-        const v = value[it.key] ?? 0;
-        return (
-          <div key={it.key} className="border-t border-line pt-3">
-            <div className="mb-1 px-1">
-              <span className="font-bold">{it.label}</span> <span className="text-xs text-sub">{it.en}</span>
-              <p className="text-xs text-sub">{it.desc}</p>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <Dots value={v} onChange={(n) => onChange({ [it.key]: n })} label={it.label} />
-              <Stepper value={v} onChange={(n) => onChange({ [it.key]: n })} label={it.label} />
-            </div>
-          </div>
-        );
-      })}
+    </div>
+  );
+}
+
+/** 플레이버 프로필 아래에 두는 클린컵·밸런스(오각형에는 들어가지 않음) */
+export function ExtraScores({ value, onChange }: { value: EvalValue; onChange: (p: Partial<EvalValue>) => void }) {
+  return (
+    <div className="mt-3 space-y-2 border-t border-line pt-3">
+      {SCORE_ITEMS.map((it) => (
+        <div key={it.key}>
+          <ScoreRow label={it.label} value={value[it.key] ?? 0} onChange={(n) => onChange({ [it.key]: n })} />
+          <p className="mt-0.5 pl-12 text-[11px] leading-snug text-sub">{it.desc}</p>
+        </div>
+      ))}
     </div>
   );
 }

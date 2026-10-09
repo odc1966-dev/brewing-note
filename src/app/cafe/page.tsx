@@ -66,7 +66,6 @@ function View() {
               <Stars value={log.rating} size={20} />
             </div>
           )}
-          <ScoreChips value={log} />
           {linkedBean && (
             <Link href={`/beans/edit/?id=${linkedBean.id}`} className="mt-3 inline-flex items-center gap-1 rounded-full bg-cream px-3 py-1.5 text-xs font-semibold">
               원두 {linkedBean.name} 보기 ›
@@ -86,6 +85,7 @@ function View() {
             <div className="mt-3 flex justify-center">
               <TagRow tags={log.tags} />
             </div>
+            <ScoreChips value={log} />
           </Card>
         </Section>
 

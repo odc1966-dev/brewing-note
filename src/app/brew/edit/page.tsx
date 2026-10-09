@@ -10,7 +10,7 @@ import { fmtTime, mmss, num, parseTime, ratio, today, uid } from "@/lib/util";
 import { ChipSelect, Header, Label, NumBox, PrimaryButton, Stars, TextArea, TextInput } from "@/components/ui";
 import Radar, { FlavorRows } from "@/components/Radar";
 import CupNotePicker from "@/components/CupNotePicker";
-import { EvalSection } from "@/components/Scores";
+import { ExtraScores, RatingSection } from "@/components/Scores";
 import BeanQuickAdd from "@/components/BeanQuickAdd";
 import { FreshBadge, StockBar } from "@/components/Items";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
@@ -223,10 +223,11 @@ function Editor() {
         </button>
 
 
-        <Label hint="차트를 누르거나 끌어도 돼요">플레이버 프로필</Label>
+        <Label hint="0~5점 · 0.5점 단위 · 차트를 누르거나 끌어도 돼요">플레이버 프로필</Label>
         <div className="rounded-2xl border border-line bg-card p-3">
           <Radar flavor={b.flavor} onChange={(f) => patch({ flavor: f })} size={260} />
           <FlavorRows flavor={b.flavor} onChange={(f) => patch({ flavor: f })} />
+          <ExtraScores value={b} onChange={patch} />
         </div>
 
         <Label hint="플레이버 휠 용어">컵노트</Label>
@@ -235,8 +236,8 @@ function Editor() {
         ) : null}
         <CupNotePicker value={b.tags} onChange={(tags) => patch({ tags })} />
 
-        <Label hint="0~5점 · 0.5점 단위">평가</Label>
-        <EvalSection value={b} onChange={patch} />
+        <Label hint="종합 · 별 왼쪽 절반 또는 −/+ 로 0.5점씩">별점</Label>
+        <RatingSection value={b.rating} onChange={(rating) => patch({ rating })} />
 
         <Label hint="최대 3장">사진</Label>
         <PhotoPicker value={photos} onChange={setPhotos} />

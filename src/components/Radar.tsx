@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { FLAVOR_AXES } from "@/lib/constants";
 import type { Flavor } from "@/lib/types";
+import { ScoreRow } from "./Scores";
 
 const MAX = 5;
 
@@ -54,7 +55,7 @@ export default function Radar({
       if (d < bestD) (bestD = d), (best = i);
     }
     const along = x * Math.cos(axisAngle(best)) + y * Math.sin(axisAngle(best));
-    const v = Math.max(0, Math.min(MAX, Math.round((along / r) * MAX)));
+    const v = Math.max(0, Math.min(MAX, Math.round((along / r) * MAX * 2) / 2)); // 0.5 단위
     const key = FLAVOR_AXES[best].key;
     if (flavor[key] !== v) onChange({ ...flavor, [key]: v });
   }
@@ -114,32 +115,12 @@ export default function Radar({
   );
 }
 
-/** 레이더 아래에 두는 축별 0~5 버튼 (작은 화면·정확한 입력용) */
+/** 레이더 아래에 두는 축별 점수(0~5, 0.5 단위) — 정확한 입력용 */
 export function FlavorRows({ flavor, onChange }: { flavor: Flavor; onChange: (f: Flavor) => void }) {
   return (
-    <div className="mt-2 space-y-1.5">
+    <div className="mt-2 space-y-2">
       {FLAVOR_AXES.map((a) => (
-        <div key={a.key} className="flex items-center gap-2">
-          <span className="w-10 shrink-0 text-sm font-semibold">{a.label}</span>
-          <div className="grid flex-1 grid-cols-6 gap-1">
-            {[0, 1, 2, 3, 4, 5].map((v) => {
-              const on = flavor[a.key] === v;
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  aria-label={`${a.label} ${v}`}
-                  onClick={() => onChange({ ...flavor, [a.key]: v })}
-                  className={`h-9 rounded-lg text-sm font-semibold ${
-                    on ? "bg-accent text-white" : v <= flavor[a.key] && v > 0 ? "bg-accent-soft text-accent" : "bg-card text-sub border border-line"
-                  }`}
-                >
-                  {v}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <ScoreRow key={a.key} label={a.label} value={flavor[a.key] ?? 0} onChange={(v) => onChange({ ...flavor, [a.key]: v })} />
       ))}
     </div>
   );

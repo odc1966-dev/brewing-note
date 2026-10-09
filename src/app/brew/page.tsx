@@ -96,7 +96,6 @@ function View() {
               <Stars value={brew.rating} size={20} />
             </div>
           )}
-          <ScoreChips value={brew} />
         </Card>
 
         {bean && !bean.archived && beanStock?.empty && (
@@ -164,6 +163,7 @@ function View() {
             <div className="mt-3 flex justify-center">
               <TagRow tags={brew.tags} />
             </div>
+            <ScoreChips value={brew} />
           </Card>
         </Section>
 
