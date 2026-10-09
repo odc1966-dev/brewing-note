@@ -3,6 +3,7 @@ import { FLAVOR_AXES, gearKindLabel, tagColor, tagLabel } from "./constants";
 import type { Bean, Brew, CafeLog, Flavor, Gear } from "./types";
 import { fmtDate, fmtTime, ratio } from "./util";
 import { recipeLine } from "./recipe";
+import { scoreLine } from "@/components/Scores";
 
 const W = 1080;
 const H = 1350;
@@ -286,6 +287,15 @@ export function drawBrewCard(canvas: HTMLCanvasElement, brew: Brew, bean: Bean |
 
   // 아래쪽 내용(장비 · 컵노트 · 메모)은 구분선(H-170) 위까지만
   let y = 1062;
+  const sc = scoreLine(brew);
+  if (sc) {
+    font(ctx, 24, 700);
+    ctx.fillStyle = C.ink;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(sc, W / 2, y + 8);
+    y += 34;
+  }
   if (brew.recipe?.length) {
     font(ctx, 24, 600);
     ctx.fillStyle = C.accent;
@@ -340,6 +350,13 @@ export function drawCafeCard(canvas: HTMLCanvasElement, log: CafeLog, nickname: 
   }
   radar(ctx, log.flavor, W / 2, 700, 190);
   let y = 960;
+  const sc = scoreLine(log);
+  if (sc) {
+    font(ctx, 26, 700);
+    ctx.fillStyle = C.ink;
+    ctx.textAlign = "center";
+    ctx.fillText(sc, W / 2, 935);
+  }
   if (log.tags.length) {
     centeredChips(ctx, log.tags, y);
     y += 90;

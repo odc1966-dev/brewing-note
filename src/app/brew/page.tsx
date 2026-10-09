@@ -16,6 +16,7 @@ import Radar from "@/components/Radar";
 import ShareSheet from "@/components/ShareSheet";
 import { PhotoStrip } from "@/components/Photos";
 import RecipeView from "@/components/RecipeView";
+import { ScoreChips } from "@/components/Scores";
 
 function View() {
   const router = useRouter();
@@ -95,6 +96,7 @@ function View() {
               <Stars value={brew.rating} size={20} />
             </div>
           )}
+          <ScoreChips value={brew} />
         </Card>
 
         {bean && !bean.archived && beanStock?.empty && (

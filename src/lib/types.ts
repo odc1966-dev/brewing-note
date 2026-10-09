@@ -45,6 +45,8 @@ export interface Brew {
   flavor: Flavor;
   tags: string[];
   rating: number; // 0~5, 0.5 단위
+  cleanCup?: number; // 0~5, 0.5 단위
+  balance?: number; // 0~5, 0.5 단위
   memo: string;
   photos?: string[]; // photos 저장소의 id
   pours?: number[]; // 타이머에서 기록한 푸어 시각(초) — 레시피 없이 쓴 경우
@@ -64,6 +66,8 @@ export interface CafeLog {
   flavor: Flavor;
   tags: string[];
   rating: number;
+  cleanCup?: number;
+  balance?: number;
   memo: string;
   photos?: string[];
   createdAt: number;

@@ -9,6 +9,7 @@ import { num, today, uid } from "@/lib/util";
 import { Header, Label, PrimaryButton, Stars, TextArea, TextInput } from "@/components/ui";
 import Radar, { FlavorRows } from "@/components/Radar";
 import CupNotePicker from "@/components/CupNotePicker";
+import { EvalSection } from "@/components/Scores";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
 
 function Editor() {
@@ -94,8 +95,8 @@ function Editor() {
         <Label hint="플레이버 휠 용어">컵노트</Label>
         <CupNotePicker value={c.tags} onChange={(tags) => patch({ tags })} />
 
-        <Label hint="별 왼쪽 절반 = 0.5점">별점</Label>
-        <Stars value={c.rating} onChange={(rating) => patch({ rating })} size={34} />
+        <Label hint="0~5점 · 0.5점 단위">평가</Label>
+        <EvalSection value={c} onChange={patch} />
 
         <Label hint="최대 3장">사진</Label>
         <PhotoPicker value={photos} onChange={setPhotos} />

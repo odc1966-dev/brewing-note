@@ -12,6 +12,7 @@ import { CafeItem, TagRow } from "@/components/Items";
 import Radar from "@/components/Radar";
 import ShareSheet from "@/components/ShareSheet";
 import { PhotoStrip } from "@/components/Photos";
+import { ScoreChips } from "@/components/Scores";
 
 function View() {
   const router = useRouter();
@@ -63,6 +64,7 @@ function View() {
               <Stars value={log.rating} size={20} />
             </div>
           )}
+          <ScoreChips value={log} />
         </Card>
 
         {log.photos?.length ? (
