@@ -83,6 +83,7 @@ export interface Settings {
   defaultTemp: number;
   timerSteps?: TimerStep[];
   recipes?: SavedRecipe[]; // 내 레시피
+  recordViews?: { brew?: string; cafe?: string; beans?: string }; // 기록 탭 보기 방식
 }
 
 /** 브루잉 레시피의 한 단계. amount 는 이번에 붓는 양(회차별), 누적은 계산 */
