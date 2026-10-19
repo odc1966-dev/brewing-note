@@ -1,6 +1,6 @@
 // 오프라인 지원: 페이지는 네트워크 우선(실패하면 캐시), 정적 파일은 캐시 우선.
 // 배포할 때마다 VERSION 을 올리면 이전 캐시가 정리된다.
-const VERSION = "bn-v10";
+const VERSION = "bn-v11";
 const SCOPE = self.registration.scope; // 하위 주소 배포도 지원
 
 self.addEventListener("install", (e) => {
@@ -8,7 +8,7 @@ self.addEventListener("install", (e) => {
     caches
       .open(VERSION)
       .then((c) =>
-        c.addAll(["", "records/", "beans/", "settings/", "brew/", "brew/edit/", "cafe/", "cafe/edit/", "beans/edit/", "gear/edit/"].map((p) => SCOPE + p)),
+        c.addAll(["", "records/", "beans/", "settings/", "brew/", "brew/edit/", "cafe/", "cafe/edit/", "beans/edit/", "gear/edit/", "flavors/"].map((p) => SCOPE + p)),
       )
       .catch(() => {})
       .then(() => self.skipWaiting()),

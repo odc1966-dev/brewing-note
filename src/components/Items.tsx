@@ -6,14 +6,20 @@ import type { Bean, Brew, CafeLog } from "@/lib/types";
 import type { Stock } from "@/lib/stock";
 import { fmtDate, freshness, ratio } from "@/lib/util";
 import { Stars, TagChip } from "./ui";
+import { MiniRose } from "./FlavorRose";
+import { petalTally } from "@/lib/flavorMap";
 
 export function BrewItem({ brew, bean }: { brew: Brew; bean?: Bean }) {
   const r = ratio(brew.dose, brew.water);
   return (
     <Link href={`/brew/?id=${brew.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 active:bg-cream">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-        <Coffee size={20} />
-      </span>
+      {petalTally(brew.tags).size ? (
+        <MiniRose tags={brew.tags} />
+      ) : (
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+          <Coffee size={20} />
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">
           {bean?.name || "원두 미지정"}
@@ -31,9 +37,13 @@ export function BrewItem({ brew, bean }: { brew: Brew; bean?: Bean }) {
 export function CafeItem({ log }: { log: CafeLog }) {
   return (
     <Link href={`/cafe/?id=${log.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 active:bg-cream">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-espresso">
-        <Store size={19} />
-      </span>
+      {petalTally(log.tags).size ? (
+        <MiniRose tags={log.tags} />
+      ) : (
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-espresso">
+          <Store size={19} />
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">
           {log.menu || "메뉴"}

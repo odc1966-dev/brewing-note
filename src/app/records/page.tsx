@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { ChevronRight, Flower2, Plus, Search } from "lucide-react";
 import { saveSettings, useStore } from "@/lib/store";
 import { tagLabel } from "@/lib/constants";
 import type { Brew, CafeLog } from "@/lib/types";
@@ -126,6 +126,15 @@ function Records() {
           value={tab}
           onChange={(t) => router.replace(t === "brew" ? "/records/" : `/records/?tab=${t}`)}
         />
+        <Link
+          href={tab === "cafe" ? "/flavors/?src=cafe" : tab === "brew" ? "/flavors/?src=brew" : "/flavors/"}
+          className="mt-3 flex min-h-12 items-center gap-2 rounded-xl border border-line bg-card px-3 active:bg-cream"
+        >
+          <Flower2 size={18} className="text-accent" />
+          <span className="flex-1 text-sm font-semibold">내 플레이버 휠</span>
+          <span className="truncate text-xs text-sub">노트 모아 보기·거르기</span>
+          <ChevronRight size={16} className="shrink-0 text-sub" />
+        </Link>
         <label className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-card px-3">
           <Search size={18} className="text-sub" />
           <input
