@@ -10,6 +10,7 @@ import { RestoreSheet } from "@/components/ArchiveUI";
 import { archiveBean, restoreBean } from "@/lib/archive";
 import { Archive, Store } from "lucide-react";
 import { PhotoPicker, useDraftPhotos } from "@/components/Photos";
+import { MonthlyPickLink } from "@/components/MonthlyPickLink";
 import { BrewItem, CafeItem, FreshBadge, StockBar } from "@/components/Items";
 import { adjustFor, stockOf } from "@/lib/stock";
 import { num } from "@/lib/util";
@@ -167,6 +168,7 @@ function Editor() {
 
         <Label hint="봉투에 적힌 노트">컵노트</Label>
         <CupNotePicker value={b.cupNotes ?? []} onChange={(cupNotes) => patch({ cupNotes })} />
+        <MonthlyPickLink compact />
 
         <Label hint="선택">메모</Label>
         <TextArea value={b.notes} onChange={(e) => patch({ notes: e.target.value })} placeholder="구입처, 가격, 로스터리 설명 등" rows={2} />

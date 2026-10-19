@@ -9,6 +9,7 @@ import { GEAR_KINDS, tagLabel } from "@/lib/constants";
 import { archivedSortKey, summarize } from "@/lib/archive";
 import { ArchiveItem } from "@/components/ArchiveUI";
 import { BeanItem } from "@/components/Items";
+import { MonthlyPickLink } from "@/components/MonthlyPickLink";
 import { stockOf } from "@/lib/stock";
 import { Empty, Header, Segment } from "@/components/ui";
 
@@ -82,6 +83,7 @@ function Beans() {
                 className="w-full bg-transparent py-3 outline-none"
               />
             </label>
+            {tab === "beans" && <MonthlyPickLink compact />}
             {tab === "archive" ? (
               <div className="mt-4 space-y-2">
                 {archived.length === 0 ? (
