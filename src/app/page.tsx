@@ -53,18 +53,18 @@ export default function Home() {
 
   return (
     <div className="px-4 pt-8">
-      <p className="text-sub">{greeting()}</p>
-      <h1 className="text-[28px] font-extrabold leading-tight">{nickname || "홈 바리스타"}님</h1>
+      <p className="text-sm text-sub">{greeting()}</p>
+      <h1 className="font-display mt-1 text-[30px] font-bold leading-tight tracking-tight">{nickname || "홈 바리스타"}님</h1>
 
       <Link
         href="/brew/edit/"
-        className="mt-6 flex items-center justify-center gap-2.5 rounded-2xl bg-espresso py-5 text-[17px] font-bold text-white shadow-md active:opacity-90"
+        className="mt-6 flex h-16 items-center justify-center gap-2.5 rounded-[20px] bg-espresso text-[17px] font-bold text-white shadow-[0_6px_16px_rgba(43,29,21,0.18)] active:opacity-90"
       >
         <Coffee size={22} /> 오늘의 커피 기록하기
       </Link>
       <Link
         href="/cafe/edit/"
-        className="mt-2 flex items-center justify-center gap-2 rounded-2xl border border-line bg-card py-3.5 font-semibold active:bg-cream"
+        className="mt-2 flex h-[50px] items-center justify-center gap-2 rounded-2xl border border-line bg-card font-medium active:bg-cream"
       >
         <Store size={19} /> 카페에서 마신 커피 기록
       </Link>
@@ -88,9 +88,9 @@ export default function Home() {
           ["전체 기록", `${stats.total}`],
           ["평균 별점", stats.avg ? stats.avg.toFixed(1) : "–"],
         ].map(([k, v]) => (
-          <Card key={k} className="!p-3 text-center">
+          <Card key={k} className="!px-2 !py-3 text-center">
             <div className="text-xs text-sub">{k}</div>
-            <div className="mt-0.5 text-xl font-extrabold">{v}</div>
+            <div className="mt-0.5 text-[22px] font-extrabold">{v}</div>
           </Card>
         ))}
       </div>
@@ -99,7 +99,7 @@ export default function Home() {
         <Section title="지금 마시는 원두">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {activeBeans.map((b) => (
-              <Link key={b.id} href={`/beans/edit/?id=${b.id}`} className="w-44 shrink-0 rounded-2xl border border-line bg-card p-3">
+              <Link key={b.id} href={`/beans/edit/?id=${b.id}`} className="w-44 shrink-0 rounded-[18px] border border-line bg-card p-3.5">
                 <div className="truncate font-semibold">{b.name}</div>
                 <div className="mb-2 truncate text-xs text-sub">{b.roaster || " "}</div>
                 <FreshBadge roastDate={b.roastDate} />
@@ -117,9 +117,14 @@ export default function Home() {
         title="최근 기록"
         action={
           recent.length > 0 && (
-            <Link href="/records/" className="text-sm text-accent">
-              모두 보기
-            </Link>
+            <span className="flex gap-3">
+              <Link href="/flavors/" className="text-sm font-medium text-accent">
+                내 플레이버 휠
+              </Link>
+              <Link href="/records/" className="text-sm text-accent">
+                모두 보기
+              </Link>
+            </span>
           )
         }
       >

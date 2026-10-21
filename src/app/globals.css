@@ -2,14 +2,17 @@
 
 @theme {
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
-  --color-bg: #f5efe6;
-  --color-card: #fffdf9;
-  --color-ink: #2e211a;
-  --color-sub: #8a7867;
-  --color-line: #e7dccd;
-  --color-accent: #b5652b;
+  /* 제목용 명조(시안 A). 인터넷이 없으면 기기의 명조로 대체 */
+  --font-display: "Gowun Batang", "AppleMyungjo", "Batang", serif;
+  /* 시안 A "로스터리 노트" 색 */
+  --color-bg: #f7f1e8;
+  --color-card: #fffdf8;
+  --color-ink: #2b1d15;
+  --color-sub: #7a6656;
+  --color-line: #e6d9c7;
+  --color-accent: #a8551f;
   --color-accent-soft: #f3e2d2;
-  --color-espresso: #3a2a20;
+  --color-espresso: #2b1d15;
   --color-cream: #efe4d4;
 }
 

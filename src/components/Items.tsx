@@ -6,15 +6,14 @@ import type { Bean, Brew, CafeLog } from "@/lib/types";
 import type { Stock } from "@/lib/stock";
 import { fmtDate, freshness, ratio } from "@/lib/util";
 import { Stars, TagChip } from "./ui";
-import { MiniRose } from "./FlavorRose";
-import { petalTally } from "@/lib/flavorMap";
+import { MiniWheel, miniArcs } from "./Sunburst";
 
 export function BrewItem({ brew, bean }: { brew: Brew; bean?: Bean }) {
   const r = ratio(brew.dose, brew.water);
   return (
-    <Link href={`/brew/?id=${brew.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 active:bg-cream">
-      {petalTally(brew.tags).size ? (
-        <MiniRose tags={brew.tags} />
+    <Link href={`/brew/?id=${brew.id}`} className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-3.5 py-3 active:bg-cream">
+      {miniArcs(brew.tags).length ? (
+        <MiniWheel tags={brew.tags} />
       ) : (
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
           <Coffee size={20} />
@@ -36,9 +35,9 @@ export function BrewItem({ brew, bean }: { brew: Brew; bean?: Bean }) {
 
 export function CafeItem({ log }: { log: CafeLog }) {
   return (
-    <Link href={`/cafe/?id=${log.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 active:bg-cream">
-      {petalTally(log.tags).size ? (
-        <MiniRose tags={log.tags} />
+    <Link href={`/cafe/?id=${log.id}`} className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-3.5 py-3 active:bg-cream">
+      {miniArcs(log.tags).length ? (
+        <MiniWheel tags={log.tags} />
       ) : (
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-espresso">
           <Store size={19} />
@@ -96,7 +95,7 @@ export function BeanItem({ bean, count, stock }: { bean: Bean; count: number; st
   return (
     <Link
       href={`/beans/edit/?id=${bean.id}`}
-      className={`block rounded-2xl border border-line bg-card px-4 py-3.5 active:bg-cream ${bean.archived ? "opacity-60" : ""}`}
+      className={`block rounded-[18px] border border-line bg-card px-3.5 py-3 active:bg-cream ${bean.archived ? "opacity-60" : ""}`}
     >
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 truncate font-semibold">{bean.name}</span>

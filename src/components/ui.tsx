@@ -20,7 +20,7 @@ export function Header({ title, back = false, right }: { title: string; back?: b
       ) : (
         <span className="w-3" />
       )}
-      <h1 className="flex-1 truncate text-[17px] font-bold">{title}</h1>
+      <h1 className="font-display flex-1 truncate text-[19px] font-bold">{title}</h1>
       <div className="flex items-center gap-1 pr-1">{right}</div>
     </header>
   );
@@ -34,7 +34,7 @@ export function Section({ title, children, action }: { title: string; children: 
   return (
     <section className="mt-6">
       <div className="mb-2 flex items-center justify-between px-1">
-        <h2 className="text-[15px] font-bold">{title}</h2>
+        <h2 className="font-display text-[17px] font-bold">{title}</h2>
         {action}
       </div>
       {children}
