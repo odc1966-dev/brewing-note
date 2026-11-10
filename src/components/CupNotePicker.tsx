@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, Plus, Search, X } from "lucide-react";
-import { IMPRESSION, SEP, WHEEL, searchTags, type WheelNode } from "@/lib/flavorWheel";
+import { BookOpen, Check, Plus, Search, X } from "lucide-react";
+import { COLOR_NOTES, IMPRESSION, SEP, WHEEL, searchTags, type WheelNode } from "@/lib/flavorWheel";
 import { tagColor, tagLabel } from "@/lib/constants";
 import FlavorWheelSheet from "./FlavorWheelSheet";
 
@@ -19,6 +19,11 @@ export default function CupNotePicker({ value, onChange }: { value: string[]; on
   const [wheel, setWheel] = useState(false);
   const [custom, setCustom] = useState("");
   const [q, setQ] = useState("");
+  // 처음엔 색 노트만 고른 기록이면 색 화면으로 연다
+  const [mode, setMode] = useState<"note" | "color">(() =>
+    value.length > 0 && value.every((v) => v.startsWith("Color" + SEP)) ? "color" : "note",
+  );
+  const colorCount = value.filter((v) => v.startsWith("Color" + SEP)).length;
 
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
   const countIn = (top: string) => value.filter((v) => v === top || v.startsWith(top + SEP)).length;
@@ -93,6 +98,61 @@ export default function CupNotePicker({ value, onChange }: { value: string[]; on
         </div>
       )}
 
+      {/* 노트로 / 색으로 */}
+      <div className="mb-2 flex rounded-xl bg-cream p-1" role="tablist" aria-label="컵노트 고르는 방식">
+        {(
+          [
+            ["note", "노트로", "블루베리·캐러멜처럼 구체적으로"],
+            ["color", `색으로${colorCount ? ` · ${colorCount}` : ""}`, "떠오르는 색으로 가볍게"],
+          ] as const
+        ).map(([id, label, sub]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={mode === id}
+            onClick={() => setMode(id)}
+            className={`flex-1 rounded-lg px-2 py-2 text-center ${mode === id ? "bg-espresso text-white shadow" : "text-sub"}`}
+          >
+            <span className="block text-sm font-semibold">{label}</span>
+            <span className={`block text-[10px] ${mode === id ? "text-white/75" : "text-sub/80"}`}>{sub}</span>
+          </button>
+        ))}
+      </div>
+
+      {mode === "color" ? (
+        <div className="rounded-2xl border border-line bg-card p-3">
+          <div className="grid grid-cols-3 gap-2">
+            {COLOR_NOTES.map((c) => {
+              const id = "Color" + SEP + c.en;
+              const on = value.includes(id);
+              return (
+                <button
+                  key={c.en}
+                  type="button"
+                  aria-pressed={on}
+                  aria-label={`${c.ko} 계열 — ${c.hint}`}
+                  onClick={() => toggle(id)}
+                  className={`flex flex-col items-center rounded-xl border-2 px-1 pb-2 pt-2.5 ${on ? "border-espresso bg-cream" : "border-transparent"}`}
+                >
+                  <span
+                    className="relative grid h-12 w-12 place-items-center rounded-full shadow-inner"
+                    style={{ background: c.swatch, border: c.en === "White" ? "1px solid #d8cdbb" : undefined }}
+                  >
+                    {on && <Check size={22} strokeWidth={3} color={["White", "Yellow", "Pink"].includes(c.en) ? "#3a2a20" : "#fff"} />}
+                  </span>
+                  <span className="mt-1.5 text-sm font-bold">{c.ko}</span>
+                  <span className="mt-0.5 text-center text-[10px] leading-snug text-sub">{c.hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-[11px] leading-snug text-sub">
+            맛이 어떤 색을 떠올리게 하는지 골라요. 여러 색을 함께 골라도 되고, ‘노트로’에서 고른 노트와 섞어도 돼요. 색과 예시는 앱에서 정한 묶음이에요.
+          </p>
+        </div>
+      ) : (
+      <>
       {/* 검색 */}
       <label className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-card px-3 focus-within:border-accent">
         <Search size={17} className="shrink-0 text-sub" />
@@ -156,6 +216,8 @@ export default function CupNotePicker({ value, onChange }: { value: string[]; on
             </div>
           )}
         </>
+      )}
+      </>
       )}
 
       <div className="mt-2 flex gap-2">

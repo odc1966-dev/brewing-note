@@ -412,6 +412,29 @@ export const IMPRESSION: WheelNode & { color: string } = {
   color: "#64748b",
 };
 
+/**
+ * 색으로 적는 컵노트: 구체적인 노트 대신 떠오르는 색 계열로 맛의 인상을 남긴다.
+ * (예: “붉은 과일 같은 산미” → 빨강). 앱 자체 묶음이며 표준 어휘는 아니다.
+ * hex = 칩 색(흰색은 글자가 보이도록 어두운 베이지), swatch = 고르는 화면의 실제 색, hint = 떠올리기 쉬운 예.
+ */
+export const COLOR_NOTES: { en: string; ko: string; hex: string; swatch: string; hint: string }[] = [
+  { en: "Red", ko: "빨강", hex: "#c8323a", swatch: "#d9363e", hint: "딸기 · 체리 · 라즈베리 · 석류" },
+  { en: "Pink", ko: "분홍", hex: "#d06a8e", swatch: "#f2a7c0", hint: "장미 · 복숭아 · 리치 · 히비스커스" },
+  { en: "Orange", ko: "주황", hex: "#e07a1f", swatch: "#f08a24", hint: "오렌지 · 살구 · 망고 · 귤" },
+  { en: "Yellow", ko: "노랑", hex: "#c9a20e", swatch: "#f2cd2e", hint: "레몬 · 파인애플 · 꿀 · 바나나" },
+  { en: "Green", ko: "초록", hex: "#4f9a4a", swatch: "#6db35f", hint: "청사과 · 라임 · 청포도 · 허브" },
+  { en: "Purple", ko: "보라", hex: "#7a4a9a", swatch: "#8c55b0", hint: "블루베리 · 포도 · 자두 · 와인" },
+  { en: "Black", ko: "검정", hex: "#2e2a28", swatch: "#2a2624", hint: "블랙베리 · 카시스 · 다크 초콜릿 · 당밀" },
+  { en: "Brown", ko: "갈색", hex: "#8a5a3c", swatch: "#94603e", hint: "캐러멜 · 견과 · 초콜릿 · 흑설탕" },
+  { en: "White", ko: "흰색", hex: "#a8987e", swatch: "#fbf8f1", hint: "흰 꽃 · 재스민 · 백도 · 우유" },
+];
+
+export const COLORS: WheelNode & { color: string } = {
+  ...x("Color", "색으로", COLOR_NOTES.map((c) => x(c.en, `${c.ko} 계열`))),
+  color: "#8a7867",
+};
+export const colorNote = (id: string) => COLOR_NOTES.find((c) => `Color>${c.en}` === id);
+
 export const SEP = ">";
 
 export interface WheelEntry {
@@ -426,12 +449,13 @@ export interface WheelEntry {
 }
 
 export const WHEEL_INDEX = new Map<string, WheelEntry>();
-for (const top of [...WHEEL, IMPRESSION]) {
+for (const top of [...WHEEL, IMPRESSION, COLORS]) {
   const add = (node: WheelNode, ids: string[], kos: string[], defect: boolean) => {
     const id = [...ids, node.en].join(SEP);
     const path = [...kos, node.ko];
     const isDefect = defect || !!node.defect;
-    WHEEL_INDEX.set(id, { id, ko: node.ko, en: node.en, depth: path.length as 1 | 2 | 3, color: top.color, path, extra: !!node.extra, defect: isDefect });
+    const own = top === COLORS ? COLOR_NOTES.find((c) => c.en === node.en)?.hex : undefined; // 색 노트는 칩도 그 색으로
+    WHEEL_INDEX.set(id, { id, ko: node.ko, en: node.en, depth: path.length as 1 | 2 | 3, color: own ?? top.color, path, extra: !!node.extra, defect: isDefect });
     node.children?.forEach((c) => add(c, [...ids, node.en], path, isDefect));
   };
   add(top, [], [], false);
