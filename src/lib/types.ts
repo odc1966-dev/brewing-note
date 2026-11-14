@@ -1,3 +1,4 @@
+import type { RefRecipe } from "./refRecipes";
 // 모든 기록은 기기 안(IndexedDB)에 저장된다. id 는 crypto.randomUUID().
 
 export type FlavorKey = "acidity" | "sweetness" | "bitterness" | "body" | "aroma";
@@ -54,6 +55,8 @@ export interface Brew {
   pours?: number[]; // 타이머에서 기록한 푸어 시각(초) — 레시피 없이 쓴 경우
   recipe?: RecipeStep[]; // 브루잉 레시피(뜸·N차 푸어)
   recipeActual?: (number | null)[]; // 타이머로 기록한 단계별 실제 시작 시각(초), recipe 와 같은 순서
+  ice?: number | null; // 아이스로 내렸을 때 얼음 g
+  refId?: string; // 참고한 레시피(레시피 탭 id: ref:… / c:… / my:…)
   createdAt: number;
   updatedAt: number;
 }
@@ -84,6 +87,7 @@ export interface Settings {
   timerSteps?: TimerStep[];
   recipes?: SavedRecipe[]; // 내 레시피
   recordViews?: { brew?: string; cafe?: string; beans?: string }; // 기록 탭 보기 방식
+  customRefs?: RefRecipe[]; // 내가 직접 추가한 다른 사람의 레시피
 }
 
 /** 브루잉 레시피의 한 단계. amount 는 이번에 붓는 양(회차별), 누적은 계산 */
@@ -107,6 +111,11 @@ export interface SavedRecipe {
   grind: string;
   steps: RecipeStep[];
   createdAt: number;
+  serve?: "HOT" | "ICE";
+  ice?: number | null;
+  memo?: string; // 내 메모
+  fromRef?: string; // 참고 레시피에서 복사했으면 그 id
+  fromName?: string; // 복사해 온 레시피의 만든 사람·이름
 }
 
 /** 타이머 안내 단계: at 초에 시작, 물을 누적 pct% 까지 (0 이면 물 안내 없음) */

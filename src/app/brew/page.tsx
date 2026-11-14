@@ -16,6 +16,7 @@ import Radar from "@/components/Radar";
 import ShareSheet from "@/components/ShareSheet";
 import { PhotoStrip } from "@/components/Photos";
 import RecipeView from "@/components/RecipeView";
+import { findEntry } from "@/lib/recipeLib";
 import { ScoreChips } from "@/components/Scores";
 
 function View() {
@@ -30,6 +31,8 @@ function View() {
 
   const brew = brews.find((x) => x.id === id);
   const bean = beans.find((x) => x.id === brew?.beanId);
+  const settings = useStore((s) => s.settings);
+  const refEntry = brew?.refId ? findEntry(settings, brew.refId) : undefined;
   const beanStock = bean ? stockOf(bean, brews) : null;
 
   const sameBean = useMemo(
@@ -117,6 +120,22 @@ function View() {
             <PhotoStrip ids={brew.photos} />
           </div>
         ) : null}
+
+        {(brew.refId || brew.ice) && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {brew.ice ? (
+              <span className="rounded-full bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-800">ICE · 얼음 {brew.ice}g</span>
+            ) : null}
+            {refEntry ? (
+              <Link
+                href={`/recipes/view/?id=${encodeURIComponent(refEntry.key)}`}
+                className="rounded-full bg-cream px-3 py-1.5 text-xs font-semibold"
+              >
+                참고: {refEntry.r.author} · {refEntry.r.name} ›
+              </Link>
+            ) : null}
+          </div>
+        )}
 
         <Section title="추출 변수" action={ratio(brew.dose, brew.water) && <span className="text-sm font-semibold text-accent">비율 {ratio(brew.dose, brew.water)}</span>}>
           <div className="grid grid-cols-3 gap-2">

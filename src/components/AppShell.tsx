@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Coffee, NotebookPen, Package, Settings } from "lucide-react";
+import { BookOpen, Coffee, NotebookPen, Package, Settings } from "lucide-react";
 import { clearError, loadAll, useStore } from "@/lib/store";
 import { asset } from "@/lib/base";
 
 const TABS = [
   { href: "/", label: "홈", icon: Coffee },
   { href: "/records/", label: "기록", icon: NotebookPen },
+  { href: "/recipes/", label: "레시피", icon: BookOpen },
   { href: "/beans/", label: "원두·장비", icon: Package },
   { href: "/settings/", label: "설정", icon: Settings },
 ];
@@ -46,7 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {showTabs && (
         <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 backdrop-blur">
-          <div className="mx-auto grid max-w-[560px] grid-cols-4">
+          <div className="mx-auto grid max-w-[560px] grid-cols-5">
             {TABS.map(({ href, label, icon: Icon }) => {
               const on = norm(href) === pathname;
               return (

@@ -18,6 +18,7 @@ import BrewTimer from "@/components/BrewTimer";
 import GearPicker from "@/components/GearPicker";
 import RecipeEditor from "@/components/RecipeEditor";
 import { cloneSteps } from "@/lib/recipe";
+import { findEntry, grindText } from "@/lib/recipeLib";
 import { stockOf } from "@/lib/stock";
 
 function Editor() {
@@ -25,16 +26,46 @@ function Editor() {
   const sp = useSearchParams();
   const editId = sp.get("id");
   const copyId = sp.get("copy");
+  const refKey = sp.get("ref");
 
   const brews = useStore((s) => s.brews);
   const beans = useStore((s) => s.beans);
   const gear = useStore((s) => s.gear);
   const settings = useStore((s) => s.settings);
 
-  // 처음 한 번만 초기값을 만든다(편집 / 복제 / 새 기록)
+  const refEntry = refKey ? findEntry(settings, refKey) : undefined;
+
+  // 처음 한 번만 초기값을 만든다(편집 / 복제 / 참고 레시피 / 새 기록)
   const [init] = useState(() => {
     const src = brews.find((b) => b.id === (editId || copyId));
     if (src && editId) return { ...src };
+    if (refEntry) {
+      const r = refEntry.r;
+      const last = [...brews].sort((a, b) => b.createdAt - a.createdAt)[0];
+      const now = Date.now();
+      return {
+        id: uid(),
+        date: today(),
+        beanId: last && !beans.find((x) => x.id === last.beanId)?.archived ? last.beanId : "",
+        method: "핸드드립",
+        gearIds: last?.gearIds ?? [],
+        dose: r.dose, // 원두량은 레시피 그대로(사용자 결정)
+        water: r.water,
+        temp: r.temp,
+        grind: grindText(r),
+        time: null,
+        waterType: last?.waterType ?? "",
+        recipe: r.steps,
+        ice: r.serve === "ICE" ? r.ice ?? null : null,
+        refId: refEntry.key,
+        flavor: { ...EMPTY_FLAVOR },
+        tags: [],
+        rating: 0,
+        memo: "",
+        createdAt: now,
+        updatedAt: now,
+      } satisfies Brew;
+    }
     const last = [...brews].sort((a, b) => b.createdAt - a.createdAt)[0];
     const base = src ?? null;
     const now = Date.now();
@@ -70,6 +101,8 @@ function Editor() {
   const [timer, setTimer] = useState(false);
   const [pours, setPours] = useState<number[]>(init.pours ?? []);
   const [recipe, setRecipe] = useState<RecipeStep[]>(() => (init.recipe ? (editId ? init.recipe : cloneSteps(init.recipe)) : []));
+  const [ice, setIce] = useState(init.ice != null ? String(init.ice) : "");
+  const [iceOn, setIceOn] = useState(init.ice != null || refEntry?.r.serve === "ICE");
   const [actual, setActual] = useState<(number | null)[]>(editId ? init.recipeActual ?? [] : []);
   const [photos, setPhotos, commitPhotos] = useDraftPhotos(editId ? init.photos ?? [] : []);
   const [showArchived, setShowArchived] = useState(false);
@@ -101,6 +134,7 @@ function Editor() {
       pours: pours.length && !recipe.length ? pours : undefined,
       recipe: recipe.length ? recipe : undefined,
       recipeActual: recipe.length && actual.some((a) => a !== null) ? actual : undefined,
+      ice: iceOn ? num(ice) : null,
       updatedAt: Date.now(),
     };
     await upsert("brews", out);
@@ -108,12 +142,17 @@ function Editor() {
     router.replace(`/brew/?id=${out.id}`);
   }
 
-  const title = editId ? "기록 수정" : copyId ? "레시피 복제" : "오늘의 커피";
+  const title = editId ? "기록 수정" : copyId ? "레시피 복제" : refEntry ? "레시피로 내리기" : "오늘의 커피";
 
   return (
     <div>
       <Header title={title} back />
       <div className="px-4">
+        {refEntry && !editId && (
+          <p className="mb-2 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">
+            참고 레시피 불러옴: <b>{refEntry.r.author}</b> · {refEntry.r.name}. 원두량·물·수온·분쇄도·단계가 채워져 있어요.
+          </p>
+        )}
         {copyId && !editId && (
           <p className="mb-2 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent">
             이전 레시피를 불러왔어요. 바꾸고 싶은 변수만 고쳐 보세요.
@@ -176,6 +215,21 @@ function Editor() {
           <NumBox label="시간 (분:초)" value={time} onChange={setTime} inputMode="text" placeholder="2:30" />
           <NumBox label="물 종류" value={b.waterType} onChange={(v) => patch({ waterType: v })} inputMode="text" placeholder="생수" />
         </div>
+        {iceOn ? (
+          <div className="mt-2 flex items-center gap-2">
+            <div className="w-1/3">
+              <NumBox label="얼음" unit="g" value={ice} onChange={setIce} placeholder="100" />
+            </div>
+            <span className="flex-1 text-xs text-sub">아이스로 내려요(물 칸은 뜨거운 물)</span>
+            <button type="button" onClick={() => setIceOn(false)} className="text-xs text-sub underline">
+              빼기
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setIceOn(true)} className="mt-2 px-1 text-xs text-accent underline">
+            ＋ 아이스로 내려요(얼음 g)
+          </button>
+        )}
         {grinder?.memo && (
           <p className="mt-2 px-1 text-xs text-sub">
             {grinder.name}: {grinder.memo}

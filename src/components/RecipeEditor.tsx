@@ -131,6 +131,42 @@ function StepCard({
   );
 }
 
+/** 단계 카드 목록 + 다음 단계 추가 버튼(기록 화면·레시피 탭에서 함께 씀) */
+export function StepList({ steps, onChange, dose }: { steps: RecipeStep[]; onChange: (s: RecipeStep[]) => void; dose: number | null }) {
+  const cum = cumulative(steps);
+  const update = (i: number, s: RecipeStep) => onChange(steps.map((x, j) => (j === i ? s : x)));
+  const move = (i: number, d: -1 | 1) => {
+    const next = [...steps];
+    [next[i], next[i + d]] = [next[i + d], next[i]];
+    onChange(next);
+  };
+  return (
+    <>
+      <div className="space-y-2">
+        {steps.map((s, i) => (
+          <StepCard
+            key={s.id}
+            step={s}
+            index={i}
+            total={steps.length}
+            cum={cum[i]}
+            onChange={(n) => update(i, n)}
+            onRemove={() => onChange(steps.filter((_, j) => j !== i))}
+            onMove={(d) => move(i, d)}
+          />
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange([...steps, newStep(steps, dose)])}
+        className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-accent py-3 text-sm font-semibold text-accent"
+      >
+        <Plus size={16} /> {steps.length ? `${steps.filter((s) => s.label !== "뜸 들이기").length + 1}차 푸어 추가` : "뜸 들이기 추가"}
+      </button>
+    </>
+  );
+}
+
 export interface RecipeBase {
   method: string;
   dose: number | null;
@@ -159,16 +195,8 @@ export default function RecipeEditor({
   const [name, setName] = useState("");
   const [help, setHelp] = useState(false);
 
-  const cum = cumulative(steps);
   const total = recipeTotal(steps);
   const mismatch = steps.length > 0 && total > 0 && base.water !== null && Math.abs(total - base.water) >= 1;
-
-  const update = (i: number, s: RecipeStep) => onChange(steps.map((x, j) => (j === i ? s : x)));
-  const move = (i: number, d: -1 | 1) => {
-    const next = [...steps];
-    [next[i], next[i + d]] = [next[i + d], next[i]];
-    onChange(next);
-  };
 
   async function saveRecipe() {
     const r: SavedRecipe = { id: uid(), name: name.trim(), ...base, steps: cloneSteps(steps), createdAt: Date.now() };
@@ -225,28 +253,7 @@ export default function RecipeEditor({
         </div>
       )}
 
-      <div className="space-y-2">
-        {steps.map((s, i) => (
-          <StepCard
-            key={s.id}
-            step={s}
-            index={i}
-            total={steps.length}
-            cum={cum[i]}
-            onChange={(n) => update(i, n)}
-            onRemove={() => onChange(steps.filter((_, j) => j !== i))}
-            onMove={(d) => move(i, d)}
-          />
-        ))}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onChange([...steps, newStep(steps, base.dose)])}
-        className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-accent py-3 text-sm font-semibold text-accent"
-      >
-        <Plus size={16} /> {steps.length ? `${steps.filter((s) => s.label !== "뜸 들이기").length + 1}차 푸어 추가` : "뜸 들이기 추가"}
-      </button>
+      <StepList steps={steps} onChange={onChange} dose={base.dose} />
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <GhostButton className="!py-2.5 text-sm" onClick={() => setLoading(true)} disabled={!recipes.length}>
